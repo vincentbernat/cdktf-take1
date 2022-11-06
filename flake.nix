@@ -81,6 +81,14 @@
             export PATH=$PWD/node_modules/.bin:$PATH
             ln -nsf ${nodeEnv}/node_modules node_modules
             ln -nsf ${cdktfProviders} .gen
+
+            # Credentials
+            for p in \
+              njf.nznmba.pbz/Nqzvavfgengbe \
+              urgmare.pbz/ivaprag@oreang.pu \
+              ihyge.pbz/ihyge@ivaprag.oreang.pu; do
+                eval $(pass show personal/$(echo $p | tr 'A-Za-z' 'N-ZA-Mn-za-m') | grep '^export')
+            done
           '';
         };
       });
