@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "cdktf-take1"
+version = "0.1.0"
+description = ""
+authors = ["Vincent Bernat <vincent@bernat.ch>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+cdktf = "~=0.13.3"
+cdktf-cdktf-provider-aws = "~10.0.2"
+pytest = "*"
+
+[build-system]
+requires = ["poetry-core>=1.2.0"]
+build-backend = "poetry.core.masonry.api"

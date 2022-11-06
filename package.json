@@ -1,0 +1,8 @@
+{
+  "name": "cdktf-take1",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "cdktf-cli": "~0.13.3"
+  }
+}
