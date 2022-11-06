@@ -3,7 +3,7 @@ import { App, TerraformStack } from "cdktf";
 import {
   provider,
   cloudfrontDistribution,
-} from "@cdktf/provider-aws";
+} from "./.gen/providers/aws";
 
 class LuffyStack extends TerraformStack {
   constructor(scope: Construct, ns: string) {
