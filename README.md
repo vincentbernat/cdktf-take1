@@ -25,18 +25,35 @@ need to have Flakes support for this to work.
 
 ### CDKTF
 
+These are the commands specific to CDKTF.
+
 ```console
 $ cdktf synth
 $ cdktf diff
 $ cdktf deploy
 ```
 
+Alternatively, one may only use `cdktf synth`, then switch to Terraform commands:
+
+```console
+$ cd cdktf.out/stacks/cdktf-take1
+$ terraform plan
+$ terraform apply
+```
+
+Notably, one can import resources this way:
+
+``` console
+$ terraform state list
+$ terraform import aws_cloudfront_distribution.cdktftake1_mediabernatch_1FD37B2F E1KREAZ6F4767X
+```
+
 ### Yarn (for JavaScript dependencies)
 
 ```console
-$ nix run .#yarn -- outdated
-$ nix run .#yarn -- install --modules-folder ~/tmp/node_modules --ignore-scripts
-$ nix run .#yarn -- upgrade-interactive --modules-folder ~/tmp/node_modules --ignore-scripts --latest
+$ yarn outdated
+$ yarn install --modules-folder ~/tmp/node_modules --ignore-scripts
+$ yarn upgrade-interactive --modules-folder ~/tmp/node_modules --ignore-scripts --latest
 ```
 
 ### Nix
