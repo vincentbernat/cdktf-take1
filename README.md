@@ -12,8 +12,8 @@ with it. Servers are then managed using NixOps. Check my
 
 When there is a change, the stack output should be exported to NixOps:
 
-```
-cdktf output --json > ~-automation/nixops-take1/cdktf.json
+```console
+$ cdktf output --json > ~-automation/nixops-take1/cdktf.json
 ```
 
 ## Various commands
@@ -25,44 +25,24 @@ need to have Flakes support for this to work.
 
 ### CDKTF
 
-```
-cdktf synth
-cdktf diff
-cdktf deploy
-```
-
-### Poetry (for Python dependencies)
-
-Check oudated dependencies:
-
-```
-nix run .#poetry -- show --outdated
-```
-
-Update a dependency:
-
-```
-nix run .#poetry -- update --lock langcodes
+```console
+$ cdktf synth
+$ cdktf diff
+$ cdktf deploy
 ```
 
 ### Yarn (for JavaScript dependencies)
 
-Check oudated dependencies:
-
-```
-nix run .#yarn -- outdated
-```
-
-Upgrade a dependency:
-
-```
-nix run .#yarn -- upgrade-interactive --modules-folder ~/tmp/node_modules --ignore-scripts --latest
+```console
+$ nix run .#yarn -- outdated
+$ nix run .#yarn -- install --modules-folder ~/tmp/node_modules --ignore-scripts
+$ nix run .#yarn -- upgrade-interactive --modules-folder ~/tmp/node_modules --ignore-scripts --latest
 ```
 
 ### Nix
 
 Update nixpkgs:
 
-```
-nix flake lock --update-input nixpkgs
+```console
+$ nix flake lock --update-input nixpkgs
 ```

@@ -1,13 +1,8 @@
 {
-  "language": "python",
-  "app": "python main.py",
+  "language": "typescript",
+  "app": "yarn --offline --silent run ts-node main.ts",
   "projectId": "b5553ff1-52a4-4994-8214-f0a1c38cbd2b",
   "sendCrashReports": "false",
   "terraformProviders": [],
-  "terraformModules": [],
-  "codeMakerOutput": "imports",
-  "context": {
-    "excludeStackIdFromLogicalIds": "true",
-    "allowSepCharsInLogicalIds": "true"
-  }
+  "terraformModules": []
 }
