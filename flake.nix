@@ -9,6 +9,7 @@
       let
         l = pkgs.lib // builtins;
         pkgs = inputs.nixpkgs.legacyPackages."${system}";
+        # In the future: https://github.com/canva-public/js2nix
         nodeEnv = pkgs.mkYarnModules {
           pname = "cdktf-take1-js-modules";
           version = "1.0.0";
