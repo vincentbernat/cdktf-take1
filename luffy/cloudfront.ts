@@ -3,7 +3,7 @@ import { AwsProvider } from "../.gen/providers/aws/provider";
 import { CloudfrontDistribution } from "../.gen/providers/aws/cloudfront-distribution";
 
 /* Cookie-less cloudfront distribution. */
-export class MediaCloudfrontDistribution extends Construct {
+class MediaCloudfrontDistribution extends Construct {
   constructor(protected scope: Construct, protected domain: string, protected provider: AwsProvider) {
     super(scope, domain);
     const originId = "MyOrigin";
@@ -60,5 +60,13 @@ export class MediaCloudfrontDistribution extends Construct {
         },
       },
     );
+  }
+}
+
+export class Resources extends Construct {
+  constructor(protected scope: Construct, protected provider: AwsProvider) {
+    super(scope, "luffy-cloudfront");
+    new MediaCloudfrontDistribution(this, "media.bernat.ch", provider);
+    new MediaCloudfrontDistribution(this, "media.une-oasis-une-ecole.fr", provider);
   }
 }

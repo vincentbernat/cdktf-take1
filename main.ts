@@ -1,18 +1,23 @@
 import { Construct } from "constructs";
 import { App, TerraformStack } from "cdktf";
-import { provider } from "./.gen/providers/aws";
-import { MediaCloudfrontDistribution } from "./lib/cloudfront";
+import { AwsProvider } from "./.gen/providers/aws/provider";
+import { HcloudProvider } from "./.gen/providers/hcloud/provider";
+import * as cloudfront from "./luffy/cloudfront";
+import * as servers from "./luffy/servers";
 
 class LuffyStack extends TerraformStack {
   constructor(scope: Construct, ns: string) {
     super(scope, ns);
 
-    const awsProvider = new provider.AwsProvider(this, "aws", {
+    const awsProvider = new AwsProvider(this, "aws", {
       region: "us-east-1",
     });
+    const hcloudProvider = new HcloudProvider(this, "hcloud", {
+      token: process.env.HCLOUD_TOKEN!,
+    });
 
-    new MediaCloudfrontDistribution(this, "media.bernat.ch", awsProvider);
-    new MediaCloudfrontDistribution(this, "media.une-oasis-une-ecole.fr", awsProvider);
+    new cloudfront.Resources(this, awsProvider);
+    new servers.Resources(this, hcloudProvider);
   }
 }
 

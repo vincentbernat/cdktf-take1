@@ -43,9 +43,16 @@ $ terraform apply
 
 Notably, one can import resources this way:
 
-``` console
+```console
 $ terraform state list
+$ terraform show --json plan | jq -r '.planned_values.root_module.resources[].address'
 $ terraform import aws_cloudfront_distribution.cdktftake1_mediabernatch_1FD37B2F E1KREAZ6F4767X
+```
+
+To get the resources from Pulumi, one can use:
+
+```console
+$ cat .pulumi/stacks/dev.json | jq -r '.checkpoint.latest.resources[] | (.urn + " → " + .id)' | grep rdns
 ```
 
 ### Yarn (for JavaScript dependencies)
