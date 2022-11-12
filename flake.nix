@@ -91,8 +91,7 @@
               ihyge.pbz/ihyge@ivaprag.oreang.pu; do
                 eval $(pass show personal/$(echo $p | tr 'A-Za-z' 'N-ZA-Mn-za-m') | grep '^export')
             done
-            # Inconvenient, but variables seem to be scoped this way
-            export TF_VAR_cdktftake1_hcloudToken_036F6EFD="$HCLOUD_TOKEN"
+            export TF_VAR_hcloudToken="$HCLOUD_TOKEN"
             unset HCLOUD_TOKEN
           '';
         };
