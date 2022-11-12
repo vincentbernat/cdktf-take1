@@ -1,5 +1,5 @@
 import { Construct } from "constructs";
-import { App, TerraformStack } from "cdktf";
+import { App, TerraformStack, TerraformVariable } from "cdktf";
 import { AwsProvider } from "./.gen/providers/aws/provider";
 import { HcloudProvider } from "./.gen/providers/hcloud/provider";
 import * as cloudfront from "./luffy/cloudfront";
@@ -12,8 +12,12 @@ class LuffyStack extends TerraformStack {
     const awsProvider = new AwsProvider(this, "aws", {
       region: "us-east-1",
     });
+    const hcloudToken = new TerraformVariable(this, "hcloudToken", {
+      type: "string",
+      sensitive: true,
+    });
     const hcloudProvider = new HcloudProvider(this, "hcloud", {
-      token: process.env.HCLOUD_TOKEN!,
+      token: hcloudToken.value,
     });
 
     new cloudfront.Resources(this, awsProvider);

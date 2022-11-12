@@ -36,6 +36,7 @@
           buildPhase = ''
             # Make the environment looks like a cdktf project
             #export CDKTF_LOG_LEVEL=debug
+            export HOME=$(mktemp -d)
             export CHECKPOINT_DISABLE=1
             export DISABLE_VERSION_CHECK=1
             export PATH=${nodeEnv}/node_modules/.bin:$PATH
@@ -90,6 +91,9 @@
               ihyge.pbz/ihyge@ivaprag.oreang.pu; do
                 eval $(pass show personal/$(echo $p | tr 'A-Za-z' 'N-ZA-Mn-za-m') | grep '^export')
             done
+            # Inconvenient, but variables seem to be scoped this way
+            export TF_VAR_cdktftake1_hcloudToken_036F6EFD="$HCLOUD_TOKEN"
+            unset HCLOUD_TOKEN
           '';
         };
       });
