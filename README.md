@@ -55,6 +55,13 @@ To get the resources from Pulumi, one can use:
 $ cat .pulumi/stacks/dev.json | jq -r '.checkpoint.latest.resources[] | (.urn + " → " + .id)' | grep rdns
 ```
 
+To export outputs to NixOps, use:
+
+```console
+$ cd cdktf.out/stacks/cdktf-take1
+$ terraform output -json > ~-automation/nixops-take1/terraform.json
+```
+
 ### Yarn (for JavaScript dependencies)
 
 ```console

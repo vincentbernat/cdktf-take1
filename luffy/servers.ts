@@ -1,17 +1,29 @@
-import { Fn } from "cdktf";
+import { Fn, TerraformOutput } from "cdktf";
 import { Construct } from "constructs";
 import { HcloudProvider } from "../.gen/providers/hcloud/provider";
 import { VultrProvider } from "../.gen/providers/vultr/provider";
 import * as hcloud from "../.gen/providers/hcloud";
 import * as vultr from "../.gen/providers/vultr";
 
-class HetznerServer extends Construct {
-  public server: hcloud.server.Server;
+/* Abstraction for a server. */
+interface Server {
+  readonly name: string;
+  readonly ipv4Address: string | null;
+  readonly ipv6Address: string | null;
+  readonly hardware: string;
+}
+
+class HetznerServer extends Construct implements Server {
+  private server: hcloud.server.Server;
+  public readonly ipv4Address: string;
+  public readonly ipv6Address: string;
+  public readonly hardware = "hetzner";
+
   constructor(
-    protected scope: Construct,
-    protected name: string,
-    protected provider: HcloudProvider,
-    protected config: Pick<
+    scope: Construct,
+    public readonly name: string,
+    provider: HcloudProvider,
+    config: Pick<
       hcloud.server.ServerConfig,
       "serverType" | "location" | "image"
     >
@@ -24,6 +36,9 @@ class HetznerServer extends Construct {
       ...config,
       provider,
     });
+    this.name = name;
+    this.ipv4Address = this.server.ipv4Address;
+    this.ipv6Address = this.server.ipv6Address;
     new hcloud.rdns.Rdns(this, `rdns4-${name}`, {
       serverId: Fn.tonumber(this.server.id),
       ipAddress: this.server.ipv4Address,
@@ -39,13 +54,17 @@ class HetznerServer extends Construct {
   }
 }
 
-class VultrServer extends Construct {
-  public server: vultr.instance.Instance;
+class VultrServer extends Construct implements Server {
+  private server: vultr.instance.Instance;
+  public readonly ipv4Address: string;
+  public readonly ipv6Address: string;
+  public readonly hardware = "vultr";
+
   constructor(
-    protected scope: Construct,
-    protected name: string,
-    protected provider: VultrProvider,
-    protected config: Pick<vultr.instance.InstanceConfig, "plan" | "region">
+    scope: Construct,
+    public readonly name: string,
+    provider: VultrProvider,
+    config: Pick<vultr.instance.InstanceConfig, "plan" | "region">
   ) {
     super(scope, name);
     this.server = new vultr.instance.Instance(this, name, {
@@ -54,6 +73,8 @@ class VultrServer extends Construct {
       ...config,
       provider,
     });
+    this.ipv4Address = this.server.mainIp;
+    this.ipv6Address = this.server.v6MainIp;
     new vultr.reverseIpv4.ReverseIpv4(this, `rdns4-${name}`, {
       instanceId: this.server.id,
       ip: this.server.mainIp,
@@ -67,30 +88,57 @@ class VultrServer extends Construct {
   }
 }
 
-interface Providers {
-  hcloud: HcloudProvider;
-  vultr: VultrProvider;
-}
-
 export class Resources extends Construct {
-  constructor(protected scope: Construct, protected providers: Providers) {
+  public readonly servers: Array<Server & { tags: string[] }>;
+  constructor(
+    scope: Construct,
+    providers: { hcloud: HcloudProvider; vultr: VultrProvider }
+  ) {
     super(scope, "luffy-servers");
-    new HetznerServer(this, "web03.luffy.cx", providers.hcloud, {
-      serverType: "cpx11",
-      location: "hel1",
-    });
-    new HetznerServer(this, "web04.luffy.cx", providers.hcloud, {
-      serverType: "cpx11",
-      location: "nbg1",
-    });
-    new HetznerServer(this, "web05.luffy.cx", providers.hcloud, {
-      serverType: "cpx11",
-      location: "ash",
-      image: "39644359",
-    });
-    new VultrServer(this, "web06.luffy.cx", providers.vultr, {
-      plan: "vc2-1c-1gb",
-      region: "ord",
+    this.servers = (
+      [
+        {
+          server: new HetznerServer(this, "web03.luffy.cx", providers.hcloud, {
+            serverType: "cpx11",
+            location: "hel1",
+          }),
+          tags: ["web", "isso", "continent:EU", "continent:AF"],
+        },
+        {
+          server: new HetznerServer(this, "web04.luffy.cx", providers.hcloud, {
+            serverType: "cpx11",
+            location: "nbg1",
+          }),
+          tags: ["web", "continent:EU", "continent:AF"],
+        },
+        {
+          server: new HetznerServer(this, "web05.luffy.cx", providers.hcloud, {
+            serverType: "cpx11",
+            location: "ash",
+            image: "39644359",
+          }),
+          tags: ["web", "continent:NA", "continent:SA"],
+        },
+        {
+          server: new VultrServer(this, "web06.luffy.cx", providers.vultr, {
+            plan: "vc2-1c-1gb",
+            region: "ord",
+          }),
+          tags: ["web", "continent:NA", "continent:SA"],
+        },
+      ] as Array<{ server: Server; tags: string[] }>
+    ).map(({ server, ...rest }) => ({
+      ...(({ name, ipv4Address, ipv6Address, hardware }) => ({
+        name,
+        ipv4Address,
+        ipv6Address,
+        hardware,
+      }))(server),
+      ...rest,
+    }));
+    new TerraformOutput(this, "servers", {
+      value: this.servers,
+      staticId: true,
     });
   }
 }
