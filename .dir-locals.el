@@ -1,2 +1,2 @@
-((typescript-mode . ((mode . format-all)))
- (nix-mode . ((mode . format-all))))
+((typescript-mode . ((mode . apheleia)))
+ (nix-mode . ((mode . apheleia))))
