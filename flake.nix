@@ -7,8 +7,10 @@
   outputs = { self, nix-filter, flake-utils, ... }@inputs:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        l = pkgs.lib // builtins;
-        pkgs = inputs.nixpkgs.legacyPackages."${system}";
+        pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [ self.overlays."${system}".default ];
+        };
         # In the future: https://github.com/canva-public/js2nix
         nodeEnv = pkgs.mkYarnModules {
           pname = "cdktf-take1-js-modules";
@@ -63,6 +65,18 @@
           yarn = {
             type = "app";
             program = "${pkgs.yarn}/bin/yarn";
+          };
+        };
+        overlays.default = final: prev: {
+          terraform-providers = prev.terraform-providers // {
+            gandi = prev.terraform-providers.gandi.overrideAttrs (old: {
+              src = pkgs.fetchFromGitHub {
+                owner = "vincentbernat";
+                repo = "terraform-provider-gandi";
+                rev = "feature/livedns-key";
+                hash = "sha256-3SARbBE2K+rFNDWdOFusVSYgy3dllWsMQZgO6wM9eqo=";
+              };
+            });
           };
         };
         devShell = pkgs.mkShell {
