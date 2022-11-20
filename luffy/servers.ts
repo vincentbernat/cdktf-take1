@@ -88,46 +88,48 @@ class VultrServer extends Construct implements Server {
   }
 }
 
+export type ServerArray = Array<
+  Server & { tags: string[]; disabled?: boolean }
+>;
+
 export class Resources extends Construct {
-  public readonly servers: Array<Server & { tags: string[] }>;
+  public readonly servers: ServerArray;
   constructor(
     scope: Construct,
     providers: { hcloud: HcloudProvider; vultr: VultrProvider }
   ) {
     super(scope, "luffy-servers");
-    this.servers = (
-      [
-        {
-          server: new HetznerServer(this, "web03.luffy.cx", providers.hcloud, {
-            serverType: "cpx11",
-            location: "hel1",
-          }),
-          tags: ["web", "isso", "continent:EU", "continent:AF"],
-        },
-        {
-          server: new HetznerServer(this, "web04.luffy.cx", providers.hcloud, {
-            serverType: "cpx11",
-            location: "nbg1",
-          }),
-          tags: ["web", "continent:EU", "continent:AF"],
-        },
-        {
-          server: new HetznerServer(this, "web05.luffy.cx", providers.hcloud, {
-            serverType: "cpx11",
-            location: "ash",
-            image: "39644359",
-          }),
-          tags: ["web", "continent:NA", "continent:SA"],
-        },
-        {
-          server: new VultrServer(this, "web06.luffy.cx", providers.vultr, {
-            plan: "vc2-1c-1gb",
-            region: "ord",
-          }),
-          tags: ["web", "continent:NA", "continent:SA"],
-        },
-      ] as Array<{ server: Server; tags: string[] }>
-    ).map(({ server, ...rest }) => ({
+    this.servers = [
+      {
+        server: new HetznerServer(this, "web03.luffy.cx", providers.hcloud, {
+          serverType: "cpx11",
+          location: "hel1",
+        }),
+        tags: ["web", "isso", "continent:EU", "continent:AF"],
+      },
+      {
+        server: new HetznerServer(this, "web04.luffy.cx", providers.hcloud, {
+          serverType: "cpx11",
+          location: "nbg1",
+        }),
+        tags: ["web", "continent:EU", "continent:AF"],
+      },
+      {
+        server: new HetznerServer(this, "web05.luffy.cx", providers.hcloud, {
+          serverType: "cpx11",
+          location: "ash",
+          image: "39644359",
+        }),
+        tags: ["web", "continent:NA", "continent:SA"],
+      },
+      {
+        server: new VultrServer(this, "web06.luffy.cx", providers.vultr, {
+          plan: "vc2-1c-1gb",
+          region: "ord",
+        }),
+        tags: ["web", "continent:NA", "continent:SA"],
+      },
+    ].map(({ server, ...rest }) => ({
       ...(({ name, ipv4Address, ipv6Address, hardware }) => ({
         name,
         ipv4Address,

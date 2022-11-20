@@ -106,10 +106,10 @@
                 ihyge.pbz/ihyge@ivaprag.oreang.pu; do
                   eval $(pass show personal/$(echo $p | tr 'A-Za-z' 'N-ZA-Mn-za-m') | grep '^export')
               done
+              eval $(pass show personal/cdktf/secrets | grep '^export')
               export TF_VAR_hcloudToken="$HCLOUD_TOKEN"
-              unset HCLOUD_TOKEN
               export TF_VAR_vultrApiKey="$VULTR_API_KEY"
-              unset VULTR_API_KEY
+              unset VULTR_API_KEY HCLOUD_TOKEN
             }
           '';
         };
