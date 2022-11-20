@@ -216,7 +216,7 @@ class GandiZone extends Zone {
       provider: this.provider,
     };
     if (!Array.isArray(records)) records = [records];
-    if (rrtype === "TXT") records = records.map((record) => `"${record}"`);
+    if (rrtype === "TXT") records = Fn.formatlist('"%s"', records);
     new gandi.livednsRecord.LivednsRecord(this, `${rrtype}-${name}`, {
       zone: this.name,
       type: rrtype,
@@ -459,9 +459,9 @@ export class Resources extends Construct {
         "comments",
         servers.filter((server) => server.tags.includes("isso"))
       )
-      .NS("y", yLuffyCX.nameservers)
+      .NS("y", Fn.formatlist("%s.", [yLuffyCX.nameservers]))
       .record("y", "DS", [yLuffyCX.ksk!.dsRecord])
-      .NS("acme", yLuffyCX.nameservers)
+      .NS("acme", Fn.formatlist("%s.", [yLuffyCX.nameservers]))
       .record("acme", "DS", [acmeLuffyCX.ksk!.dsRecord]);
   }
 }
