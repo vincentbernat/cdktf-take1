@@ -122,11 +122,11 @@ abstract class BasicZone extends Construct {
 
   /** Create records for web servers. */
   www(name: string, servers: ServerArray) {
-    // Only keep not disabled web servers.
+    // Only keep non-disabled web servers.
     servers = servers.filter(
       (server) => !server.disabled && server.tags.includes("web")
     );
-    this.A_AAAA(name, servers, { ttl: 60 * 60 * 2 });
+    this.www_A_AAAA(name, servers, { ttl: 60 * 60 * 2 });
     this.record(name, "CAA", ['0 issue "buypass.com"', '0 issuewild ";"']);
     if (name === "@") {
       this.CNAME("_acme-challenge", `${this.name}.acme.luffy.cx.`);
@@ -137,6 +137,10 @@ abstract class BasicZone extends Construct {
       );
     }
     return this;
+  }
+
+  www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
+    return this.A_AAAA(name, servers, options);
   }
 
   /** Create A/AAAA records for server names if they match the domain. */
@@ -158,6 +162,11 @@ class MultiZone extends BasicZone {
   }
   record(name: string, rrtype: RR, records: Records, options?: RecordOptions) {
     this.zones.forEach((zone) => zone.record(name, rrtype, records, options));
+    return this;
+  }
+
+  www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
+    this.zones.forEach((zone) => zone.www_A_AAAA(name, servers, options));
     return this;
   }
 }
@@ -216,7 +225,7 @@ class GandiZone extends Zone {
       provider: this.provider,
     };
     if (!Array.isArray(records)) records = [records];
-    if (rrtype === "TXT") records = Fn.formatlist('"%s"', records);
+    if (rrtype === "TXT") records = Fn.formatlist('\\"%s\\"', [records]);
     new gandi.livednsRecord.LivednsRecord(this, `${rrtype}-${name}`, {
       zone: this.name,
       type: rrtype,
@@ -290,6 +299,43 @@ class Route53Zone extends Zone {
         ...providerOptions,
       }
     );
+    return this;
+  }
+
+  // Use geolocation tags
+  www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
+    const geotags = ["continent", "country", "subdivision"] as const;
+    const rrs = servers.reduce<Record<string, ServerArray>>(
+      (acc, server) =>
+        server.tags.reduce<Record<string, ServerArray>>((acc, tag) => {
+          if (!geotags.some((g) => tag.startsWith(g))) return acc;
+          if (!(tag in acc)) {
+            return {
+              ...acc,
+              [tag]: [server],
+            };
+          }
+          return {
+            ...acc,
+            [tag]: [...acc[tag], server],
+          };
+        }, acc),
+      {
+        "country:*": servers,
+      }
+    );
+    for (const rr in rrs) {
+      const [geotag, value] = rr.split(":");
+      this.A_AAAA(name, servers, {
+        ...options,
+        setIdentifier: `geo-${geotag}-${value}`,
+        geolocationRoutingPolicy: [
+          {
+            [geotag]: value,
+          },
+        ],
+      });
+    }
     return this;
   }
 

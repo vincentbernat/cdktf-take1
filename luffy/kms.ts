@@ -44,7 +44,8 @@ export class Resources extends Construct {
             Principal: { Service: "dnssec-route53.amazonaws.com" },
             Action: "kms:CreateGrant",
             Resource: "*",
-            Condition: { Bool: { "kms:GrantIsForAWSResource": "true" } },
+            // FIXME: see https://github.com/hashicorp/terraform-cdk/issues/1795
+            Condition: { Bool: { '"kms:GrantIsForAWSResource"': "true" } },
           },
         ],
       }),
