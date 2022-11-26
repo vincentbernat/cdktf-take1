@@ -37,7 +37,7 @@ Alternatively, one may only use `cdktf synth`, then switch to Terraform commands
 
 ```console
 $ cd cdktf.out/stacks/cdktf-take1
-$ terraform plan
+$ terraform plan --out plan
 $ terraform apply
 ```
 

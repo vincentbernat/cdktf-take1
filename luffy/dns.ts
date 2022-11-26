@@ -210,7 +210,7 @@ class GandiZone extends Zone {
     name: string,
     private readonly provider: GandiProvider
   ) {
-    super(scope, name);
+    super(scope, `G-${name}`);
   }
 
   record(
@@ -266,7 +266,7 @@ class Route53Zone extends Zone {
     name: string,
     private readonly provider: AwsProvider
   ) {
-    super(scope, name);
+    super(scope, `R53-${name}`);
     this.zone = new aws.route53Zone.Route53Zone(this, "zone", {
       name: name,
       provider: this.provider,
@@ -454,11 +454,11 @@ export class Resources extends Construct {
     new MultiZone(
       this,
       "MZ-bernat.im",
-      new Route53Zone(this, "R53-bernat.im", providers.aws).registrar(
+      new Route53Zone(this, "bernat.im", providers.aws).registrar(
         providers.gandiVB,
         false
       ),
-      new GandiZone(this, "Gandi-bernat.im", providers.gandiVB)
+      new GandiZone(this, "bernat.im", providers.gandiVB)
     )
       .www("@", servers)
       .www("vincent", servers)
@@ -468,10 +468,10 @@ export class Resources extends Construct {
     new MultiZone(
       this,
       "MZ-bernat.ch",
-      new Route53Zone(this, "R53-bernat.ch", providers.aws)
+      new Route53Zone(this, "bernat.ch", providers.aws)
         .sign(dnsCMK)
         .registrar(providers.gandiVB),
-      new GandiZone(this, "Gandi-bernat.ch", providers.gandiVB).sign()
+      new GandiZone(this, "bernat.ch", providers.gandiVB).sign()
     )
       .www("@", servers)
       .www("vincent", servers)
