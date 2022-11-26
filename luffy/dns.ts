@@ -53,7 +53,7 @@ abstract class BasicZone extends Construct {
     options?: RecordOptions
   ): this;
 
-  public readonly name: string; // zone name
+  protected readonly name: string; // zone name
 
   constructor(scope: Construct, zoneName: string);
   constructor(scope: Construct, resourceName: string, zoneName: string);
@@ -62,20 +62,27 @@ abstract class BasicZone extends Construct {
     this.name = zoneName === undefined ? zoneOrResourceName : zoneName;
   }
 
-  A = (name: string, records: Records, options?: RecordOptions) =>
-    this.record(name, "A", records, options);
-  AAAA = (name: string, records: Records, options?: RecordOptions) =>
-    this.record(name, "AAAA", records, options);
-  CNAME = (name: string, records: Records, options?: RecordOptions) =>
-    this.record(name, "CNAME", records, options);
-  MX = (name: string, records: Records, options?: RecordOptions) =>
-    this.record(name, "MX", records, options);
-  NS = (name: string, records: Records, options?: RecordOptions) =>
-    this.record(name, "NS", records, options);
-  SRV = (name: string, records: Records, options?: RecordOptions) =>
-    this.record(name, "SRV", records, options);
-  TXT = (name: string, records: Records, options?: RecordOptions) =>
-    this.record(name, "TXT", records, options);
+  A(name: string, records: Records, options?: RecordOptions) {
+    return this.record(name, "A", records, options);
+  }
+  AAAA(name: string, records: Records, options?: RecordOptions) {
+    return this.record(name, "AAAA", records, options);
+  }
+  CNAME(name: string, records: Records, options?: RecordOptions) {
+    return this.record(name, "CNAME", records, options);
+  }
+  MX(name: string, records: Records, options?: RecordOptions) {
+    return this.record(name, "MX", records, options);
+  }
+  NS(name: string, records: Records, options?: RecordOptions) {
+    return this.record(name, "NS", records, options);
+  }
+  SRV(name: string, records: Records, options?: RecordOptions) {
+    return this.record(name, "SRV", records, options);
+  }
+  TXT(name: string, records: Records, options?: RecordOptions) {
+    return this.record(name, "TXT", records, options);
+  }
 
   /** Create A/AAAA records to a selection of servers. */
   A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
@@ -159,45 +166,25 @@ abstract class BasicZone extends Construct {
 }
 
 /** Propagate records to multiple zones. */
-function MultiZone(scope: Construct, ...zones: Zone[]): BasicZone {
-  const proxy = new Proxy(new _MultiZone(scope, `MZ-${zones[0].name}`, zones), {
-    get(target, prop, receiver) {
-      const r = Reflect.get(target, prop, receiver);
-      if (prop === "name") throw new Error("MultiZone does not have a name");
+function MultiZone(...zones: Zone[]): BasicZone {
+  const proxy = new Proxy(new Object(), {
+    get(_, prop) {
       if (
-        prop !== "record" &&
         Object.getOwnPropertyNames(BasicZone.prototype).includes(
           prop.toString()
         )
       ) {
-        if (r instanceof Function) {
-          return (...args: any[]) => {
-            zones.forEach((zone) =>
-              Reflect.get(zone, prop, zone).bind(zone)(...args)
-            );
-            return proxy;
-          };
-        }
+        return (...args: any[]) => {
+          zones.forEach((zone) => {
+            Reflect.get(zone, prop, zone).apply(zone, args);
+          });
+          return proxy;
+        };
       }
-      return r;
+      return undefined;
     },
   });
-  return proxy;
-}
-class _MultiZone extends BasicZone {
-  constructor(
-    scope: Construct,
-    name: string,
-    protected readonly zones: Zone[]
-  ) {
-    super(scope, name);
-  }
-  record(name: string, rrtype: RR, records: Records, options?: RecordOptions) {
-    this.zones.forEach((zone) => {
-      zone.record(name, rrtype, records, options);
-    });
-    return this;
-  }
+  return proxy as unknown as BasicZone;
 }
 
 /** A zone is the abstract construct for a real zone (one that can be registered). */
@@ -450,7 +437,6 @@ export class Resources extends Construct {
 
     // enxio.fr/enx.io (on Gandi)
     MultiZone(
-      this,
       new GandiZone(this, "enxio.fr", providers.gandiVB)
         .sign()
         .registrar(providers.gandiVB),
@@ -482,7 +468,6 @@ export class Resources extends Construct {
 
     // bernat.im (not signed), on Route53, backup on Gandi
     MultiZone(
-      this,
       new Route53Zone(this, "bernat.im", providers.aws).registrar(
         providers.gandiVB,
         false
@@ -495,7 +480,6 @@ export class Resources extends Construct {
 
     // bernat.ch, on Route 53, backup on Gandi
     MultiZone(
-      this,
       new Route53Zone(this, "bernat.ch", providers.aws)
         .sign(dnsCMK)
         .registrar(providers.gandiVB),
