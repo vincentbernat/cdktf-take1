@@ -374,7 +374,7 @@ class Route53Zone extends Zone {
     const ksk = new aws.route53KeySigningKey.Route53KeySigningKey(this, `KSK`, {
       hostedZoneId: this.zone.zoneId,
       keyManagementServiceArn: dnsCMK.targetKeyArn,
-      name: this.name.replace(/[^0-9a-zA-Z]/, ""),
+      name: this.name.replace(/[^0-9a-zA-Z]/g, ""),
       status: "ACTIVE",
       provider: this.provider,
     });
@@ -422,7 +422,7 @@ class Route53Zone extends Zone {
           },
         ],
       }),
-      user: user.arn,
+      user: user.id,
     });
     return this;
   }
