@@ -53,8 +53,13 @@ abstract class BasicZone extends Construct {
     options?: RecordOptions
   ): this;
 
-  constructor(scope: Construct, public readonly name: string) {
-    super(scope, name);
+  public readonly name: string; // zone name
+
+  constructor(scope: Construct, zoneName: string);
+  constructor(scope: Construct, resourceName: string, zoneName: string);
+  constructor(scope: Construct, zoneOrResourceName: string, zoneName?: string) {
+    super(scope, zoneOrResourceName);
+    this.name = zoneName === undefined ? zoneOrResourceName : zoneName;
   }
 
   A = (name: string, records: Records, options?: RecordOptions) =>
@@ -154,19 +159,43 @@ abstract class BasicZone extends Construct {
 }
 
 /** Propagate records to multiple zones. */
-class MultiZone extends BasicZone {
-  private zones: Zone[];
-  constructor(scope: Construct, name: string, ...zones: Zone[]) {
+function MultiZone(scope: Construct, ...zones: Zone[]): BasicZone {
+  const proxy = new Proxy(new _MultiZone(scope, `MZ-${zones[0].name}`, zones), {
+    get(target, prop, receiver) {
+      const r = Reflect.get(target, prop, receiver);
+      if (prop === "name") throw new Error("MultiZone does not have a name");
+      if (
+        prop !== "record" &&
+        Object.getOwnPropertyNames(BasicZone.prototype).includes(
+          prop.toString()
+        )
+      ) {
+        if (r instanceof Function) {
+          return (...args: any[]) => {
+            zones.forEach((zone) =>
+              Reflect.get(zone, prop, zone).bind(zone)(...args)
+            );
+            return proxy;
+          };
+        }
+      }
+      return r;
+    },
+  });
+  return proxy;
+}
+class _MultiZone extends BasicZone {
+  constructor(
+    scope: Construct,
+    name: string,
+    protected readonly zones: Zone[]
+  ) {
     super(scope, name);
-    this.zones = zones;
   }
   record(name: string, rrtype: RR, records: Records, options?: RecordOptions) {
-    this.zones.forEach((zone) => zone.record(name, rrtype, records, options));
-    return this;
-  }
-
-  www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
-    this.zones.forEach((zone) => zone.www_A_AAAA(name, servers, options));
+    this.zones.forEach((zone) => {
+      zone.record(name, rrtype, records, options);
+    });
     return this;
   }
 }
@@ -178,8 +207,10 @@ abstract class Zone extends BasicZone {
   /** KSK for this zone. */
   public ksk: SigningKey | null;
 
-  constructor(scope: Construct, name: string) {
-    super(scope, name);
+  constructor(scope: Construct, resourceName: string, zoneName: string);
+  constructor(scope: Construct, resourceAndZoneName: string);
+  constructor(scope: Construct, resourceOrZoneName: string, zoneName?: string) {
+    super(scope, resourceOrZoneName, zoneName ?? resourceOrZoneName);
     this.ksk = null;
   }
 
@@ -210,7 +241,7 @@ class GandiZone extends Zone {
     name: string,
     private readonly provider: GandiProvider
   ) {
-    super(scope, `G-${name}`);
+    super(scope, `G-${name}`, name);
   }
 
   record(
@@ -266,7 +297,7 @@ class Route53Zone extends Zone {
     name: string,
     private readonly provider: AwsProvider
   ) {
-    super(scope, `R53-${name}`);
+    super(scope, `R53-${name}`, name);
     this.zone = new aws.route53Zone.Route53Zone(this, "zone", {
       name: name,
       provider: this.provider,
@@ -285,7 +316,7 @@ class Route53Zone extends Zone {
       provider: this.provider,
     };
     if (!Array.isArray(records)) records = [records];
-    name = name === "@" ? this.name : `${name}.${this.name}`;
+    const rname = name === "@" ? this.name : `${name}.${this.name}`;
     new aws.route53Record.Route53Record(
       this,
       options?.setIdentifier
@@ -294,7 +325,7 @@ class Route53Zone extends Zone {
       {
         zoneId: this.zone.zoneId,
         type: rrtype,
-        name,
+        name: rname,
         records,
         ...providerOptions,
       }
@@ -418,9 +449,8 @@ export class Resources extends Construct {
     });
 
     // enxio.fr/enx.io (on Gandi)
-    new MultiZone(
+    MultiZone(
       this,
-      "MZ-enxio",
       new GandiZone(this, "enxio.fr", providers.gandiVB)
         .sign()
         .registrar(providers.gandiVB),
@@ -451,9 +481,8 @@ export class Resources extends Construct {
       );
 
     // bernat.im (not signed), on Route53, backup on Gandi
-    new MultiZone(
+    MultiZone(
       this,
-      "MZ-bernat.im",
       new Route53Zone(this, "bernat.im", providers.aws).registrar(
         providers.gandiVB,
         false
@@ -465,9 +494,8 @@ export class Resources extends Construct {
       .fastmailMX();
 
     // bernat.ch, on Route 53, backup on Gandi
-    new MultiZone(
+    MultiZone(
       this,
-      "MZ-bernat.ch",
       new Route53Zone(this, "bernat.ch", providers.aws)
         .sign(dnsCMK)
         .registrar(providers.gandiVB),
