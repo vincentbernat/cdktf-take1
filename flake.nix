@@ -74,7 +74,7 @@
                 owner = "vincentbernat";
                 repo = "terraform-provider-gandi";
                 rev = "feature/livedns-key";
-                hash = "sha256-3SARbBE2K+rFNDWdOFusVSYgy3dllWsMQZgO6wM9eqo=";
+                hash = "sha256-V16BIjo5/rloQ1xTQrdd0snoq1OPuDh3fQNW7kiv/kQ=";
               };
             });
           };
