@@ -133,12 +133,12 @@ abstract class BasicZone extends Construct {
   }
 
   /** Create records for web servers. */
-  www(name: string, servers: ServerArray) {
+  www(name: string, servers: ServerArray, options?: RecordOptions) {
     // Only keep non-disabled web servers.
     servers = servers.filter(
       (server) => !server.disabled && server.tags.includes("web")
     );
-    this.www_A_AAAA(name, servers, { ttl: 60 * 60 * 2 });
+    this.www_A_AAAA(name, servers, { ...options, ttl: 60 * 60 * 2 });
     this.record(name, "CAA", ['0 issue "buypass.com"', '0 issuewild ";"']);
     if (name === "@") {
       this.CNAME("_acme-challenge", `${this.name}.acme.luffy.cx.`);
@@ -156,10 +156,14 @@ abstract class BasicZone extends Construct {
   }
 
   /** Create A/AAAA records for server names if they match the domain. */
-  servers(servers: ServerArray) {
+  servers(servers: ServerArray, options?: RecordOptions) {
     servers = servers.filter((server) => server.name.endsWith(`.${this.name}`));
     servers.forEach((server) =>
-      this.A_AAAA(server.name.slice(0, -this.name.length - 1), [server])
+      this.A_AAAA(
+        server.name.slice(0, -this.name.length - 1),
+        [server],
+        options
+      )
     );
     return this;
   }
@@ -515,7 +519,9 @@ export class Resources extends Construct {
       .CNAME("eizo", "eizo.y.luffy.cx.")
       .A_AAAA(
         "comments",
-        servers.filter((server) => server.tags.includes("isso"))
+        servers.filter((server) => server.tags.includes("isso"), {
+          ttl: 60 * 60 * 2,
+        })
       )
       .NS("y", Fn.formatlist("%s.", [yLuffyCX.nameservers]))
       .record("y", "DS", [yLuffyCX.ksk!.dsRecord])
