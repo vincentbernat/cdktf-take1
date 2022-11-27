@@ -13,7 +13,8 @@ with it. Servers are then managed using NixOps. Check my
 When there is a change, the stack output should be exported to NixOps:
 
 ```console
-$ cdktf output --json > ~-automation/nixops-take1/cdktf.json
+$ cd cdktf.out/stacks/cdktf-take1
+$ terraform output -json > ~-automation/nixops-take1/cdktf.json
 ```
 
 ## Various commands
@@ -33,13 +34,15 @@ $ cdktf diff
 $ cdktf deploy
 ```
 
-Alternatively, one may only use `cdktf synth`, then switch to Terraform commands:
+Alternatively, one may only use `cdktf synth`, then switch to Terraform commands
+(they are far more flexible):
 
 ```console
 $ cd cdktf.out/stacks/cdktf-take1
 $ terraform plan --out plan
 $ terraform plan --out plan --refresh=false
 $ terraform apply plan
+$ terraform output -json > ~-automation/nixops-take1/cdktf.json
 ```
 
 Notably, one can import resources this way:
@@ -54,13 +57,6 @@ To get the resources from Pulumi, one can use:
 
 ```console
 $ cat .pulumi/stacks/dev.json | jq -r '.checkpoint.latest.resources[] | (.urn + " → " + .id)' | grep rdns
-```
-
-To export outputs to NixOps, use:
-
-```console
-$ cd cdktf.out/stacks/cdktf-take1
-$ terraform output -json > ~-automation/nixops-take1/cdktf.json
 ```
 
 ### Yarn (for JavaScript dependencies)
