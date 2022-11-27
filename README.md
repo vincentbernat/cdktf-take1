@@ -38,7 +38,8 @@ Alternatively, one may only use `cdktf synth`, then switch to Terraform commands
 ```console
 $ cd cdktf.out/stacks/cdktf-take1
 $ terraform plan --out plan
-$ terraform apply
+$ terraform plan --out plan --refresh=false
+$ terraform apply plan
 ```
 
 Notably, one can import resources this way:
@@ -59,7 +60,7 @@ To export outputs to NixOps, use:
 
 ```console
 $ cd cdktf.out/stacks/cdktf-take1
-$ terraform output -json > ~-automation/nixops-take1/terraform.json
+$ terraform output -json > ~-automation/nixops-take1/cdktf.json
 ```
 
 ### Yarn (for JavaScript dependencies)

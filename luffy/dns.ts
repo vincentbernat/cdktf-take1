@@ -1,4 +1,4 @@
-import { Fn } from "cdktf";
+import { Fn, TerraformOutput } from "cdktf";
 import type { ServerArray } from "./servers";
 import type { Resources as KMSResources } from "./kms";
 import { Construct } from "constructs";
@@ -282,7 +282,7 @@ class GandiZone extends Zone {
 }
 
 class Route53Zone extends Zone {
-  private zone: aws.route53Zone.Route53Zone;
+  public readonly zone: aws.route53Zone.Route53Zone;
   constructor(
     scope: Construct,
     name: string,
@@ -527,5 +527,10 @@ export class Resources extends Construct {
       .record("y", "DS", [yLuffyCX.ksk!.dsRecord])
       .NS("acme", Fn.formatlist("%s.", [acmeLuffyCX.nameservers]))
       .record("acme", "DS", [acmeLuffyCX.ksk!.dsRecord]);
+
+    new TerraformOutput(this, "acme-zone", {
+      value: acmeLuffyCX.zone.zoneId,
+      staticId: true,
+    });
   }
 }
