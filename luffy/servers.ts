@@ -74,7 +74,10 @@ class VultrServer extends Construct implements Server {
       provider,
     });
     this.ipv4Address = this.server.mainIp;
-    this.ipv6Address = this.server.v6MainIp;
+    this.ipv6Address = Fn.cidrhost(
+      Fn.format("%s/128", [this.server.v6MainIp]),
+      0
+    );
     new vultr.reverseIpv4.ReverseIpv4(this, `rdns4-${name}`, {
       instanceId: this.server.id,
       ip: this.server.mainIp,
