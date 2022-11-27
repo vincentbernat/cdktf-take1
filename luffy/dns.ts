@@ -519,7 +519,7 @@ export class Resources extends Construct {
       )
       .NS("y", Fn.formatlist("%s.", [yLuffyCX.nameservers]))
       .record("y", "DS", [yLuffyCX.ksk!.dsRecord])
-      .NS("acme", Fn.formatlist("%s.", [yLuffyCX.nameservers]))
+      .NS("acme", Fn.formatlist("%s.", [acmeLuffyCX.nameservers]))
       .record("acme", "DS", [acmeLuffyCX.ksk!.dsRecord]);
   }
 }
