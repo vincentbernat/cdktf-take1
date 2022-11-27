@@ -344,7 +344,7 @@ class Route53Zone extends Zone {
     );
     for (const rr in rrs) {
       const [geotag, value] = rr.split(":");
-      this.A_AAAA(name, servers, {
+      this.A_AAAA(name, rrs[rr], {
         ...options,
         setIdentifier: `geo-${geotag}-${value}`,
         geolocationRoutingPolicy: [
