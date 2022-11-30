@@ -116,7 +116,6 @@ export class Resources extends Construct {
           location: "nbg1",
         }),
         tags: ["web", "continent:EU", "continent:AF"],
-        disabled: true,
       },
       {
         server: new HetznerServer(this, "web05.luffy.cx", providers.hcloud, {
@@ -124,13 +123,7 @@ export class Resources extends Construct {
           location: "ash",
           image: "39644359",
         }),
-        tags: [
-          "web",
-          "continent:NA",
-          "continent:SA",
-          "continent:EU",
-          "continent:AF",
-        ],
+        tags: ["web", "continent:NA", "continent:SA"],
       },
       {
         server: new VultrServer(this, "web06.luffy.cx", providers.vultr, {
