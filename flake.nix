@@ -75,7 +75,7 @@
             program = "${pkgs.yarn}/bin/yarn";
           };
         };
-        devShell = pkgs.mkShell {
+        devShells.default = pkgs.mkShell {
           name = "cdktf-take1";
           buildInputs = [
             pkgs.nodejs
