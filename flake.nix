@@ -43,7 +43,6 @@
             root = ./.;
             include = [ ./cdktf.json ./tsconfig.json ];
           };
-          phases = [ "unpackPhase" "buildPhase" "installPhase" "fixupPhase" ];
           buildPhase = ''
             # Make the environment looks like a cdktf project
             #export CDKTF_LOG_LEVEL=debug
