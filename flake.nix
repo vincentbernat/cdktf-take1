@@ -4,12 +4,14 @@
     nix-filter.url = "github:numtide/nix-filter";
     flake-utils.url = "github:numtide/flake-utils";
   };
-  outputs = { self, nix-filter, flake-utils, ... }@inputs:
+  outputs = { self, flake-utils, ... }@inputs:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import inputs.nixpkgs {
-          inherit system;
-        };
+        pkgs = import inputs.nixpkgs
+          {
+            inherit system;
+          };
+        nix-filter = inputs.nix-filter.lib;
         # In the future: https://github.com/canva-public/js2nix
         nodeEnv = pkgs.mkYarnModules {
           pname = "cdktf-take1-js-modules";
@@ -37,7 +39,7 @@
             pkgs.nodejs
             terraform
           ];
-          src = (import nix-filter) {
+          src = nix-filter {
             root = ./.;
             include = [ ./cdktf.json ./tsconfig.json ];
           };
