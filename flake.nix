@@ -9,7 +9,6 @@
       let
         pkgs = import inputs.nixpkgs {
           inherit system;
-          overlays = [ self.overlays."${system}".default ];
         };
         # In the future: https://github.com/canva-public/js2nix
         nodeEnv = pkgs.mkYarnModules {
@@ -22,7 +21,15 @@
           p.aws
           p.hcloud
           p.vultr
-          p.gandi
+          (p.gandi.overrideAttrs
+            (old: {
+              src = pkgs.fetchFromGitHub {
+                owner = "vincentbernat";
+                repo = "terraform-provider-gandi";
+                rev = "feature/livedns-key";
+                hash = "sha256-V16BIjo5/rloQ1xTQrdd0snoq1OPuDh3fQNW7kiv/kQ=";
+              };
+            }))
         ]);
         cdktfProviders = pkgs.stdenvNoCC.mkDerivation {
           name = "cdktf-providers";
@@ -65,18 +72,6 @@
           yarn = {
             type = "app";
             program = "${pkgs.yarn}/bin/yarn";
-          };
-        };
-        overlays.default = final: prev: {
-          terraform-providers = prev.terraform-providers // {
-            gandi = prev.terraform-providers.gandi.overrideAttrs (old: {
-              src = pkgs.fetchFromGitHub {
-                owner = "vincentbernat";
-                repo = "terraform-provider-gandi";
-                rev = "feature/livedns-key";
-                hash = "sha256-V16BIjo5/rloQ1xTQrdd0snoq1OPuDh3fQNW7kiv/kQ=";
-              };
-            });
           };
         };
         devShell = pkgs.mkShell {
