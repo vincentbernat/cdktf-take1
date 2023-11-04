@@ -124,7 +124,7 @@ export class Resources extends Construct {
           this,
           "web02.luffy.cx",
           "45.90.160.60",
-          "2a0c:8881::1",
+          "2a0c:8881::948e:48ff:fe0d:d535",
           "sapinet"
         ),
         tags: [
