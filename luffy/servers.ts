@@ -127,7 +127,13 @@ export class Resources extends Construct {
           "2a0c:8881::1",
           "sapinet"
         ),
-        tags: ["web", "contient:EU", "continent:AF"],
+        tags: [
+          "web",
+          "continent:EU",
+          "continent:AF",
+          "gateway4:45.90.160.33",
+          "gateway6:fe80::200:ff:fe00:1",
+        ],
         disabled: true,
       },
       {
