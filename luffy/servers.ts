@@ -13,6 +13,22 @@ interface Server {
   readonly hardware: string;
 }
 
+class GenericServer extends Construct implements Server {
+  constructor(
+    scope: Construct,
+    public readonly name: string,
+    public readonly ipv4Address: string,
+    public readonly ipv6Address: string,
+    public readonly hardware: string
+  ) {
+    super(scope, name);
+    this.name = name;
+    this.ipv4Address = ipv4Address;
+    this.ipv6Address = ipv6Address;
+    this.hardware = hardware;
+  }
+}
+
 class HetznerServer extends Construct implements Server {
   private server: hcloud.server.Server;
   public readonly ipv4Address: string;
@@ -103,6 +119,17 @@ export class Resources extends Construct {
   ) {
     super(scope, "luffy-servers");
     this.servers = [
+      {
+        server: new GenericServer(
+          this,
+          "web02.luffy.cx",
+          "45.90.160.60",
+          "2a0c:8881::1",
+          "sapinet"
+        ),
+        tags: ["web", "contient:EU", "continent:AF"],
+        disabled: true,
+      },
       {
         server: new HetznerServer(this, "web03.luffy.cx", providers.hcloud, {
           serverType: "cpx11",
