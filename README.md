@@ -72,5 +72,5 @@ $ yarn upgrade-interactive --modules-folder ~/tmp/node_modules --ignore-scripts 
 Update nixpkgs:
 
 ```console
-$ nix flake lock --update-input nixpkgs
+$ nix flake update nixpkgs
 ```
