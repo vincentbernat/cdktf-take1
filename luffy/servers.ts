@@ -134,14 +134,13 @@ export class Resources extends Construct {
           "gateway4:45.90.160.33",
           "gateway6:fe80::200:ff:fe00:1",
         ],
-        disabled: true,
       },
       {
         server: new HetznerServer(this, "web03.luffy.cx", providers.hcloud, {
           serverType: "cpx11",
           location: "hel1",
         }),
-        tags: ["web", "isso", "continent:EU", "continent:AF"],
+        tags: ["web", "isso", "continent:EU"],
       },
       {
         server: new HetznerServer(this, "web04.luffy.cx", providers.hcloud, {
