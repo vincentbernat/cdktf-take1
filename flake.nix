@@ -23,15 +23,13 @@
           p.aws
           p.hcloud
           p.vultr
-          (p.gandi.overrideAttrs
-            (old: {
-              src = pkgs.fetchFromGitHub {
-                owner = "vincentbernat";
-                repo = "terraform-provider-gandi";
-                rev = "feature/livedns-key";
-                hash = "sha256-XNKMqVQ/tVG2OHyuBtBdrrZa4jFzCw8a5WLKELuqKkw=";
-              };
-            }))
+          (p.gandi.override {
+            owner = "vincentbernat";
+            repo = "terraform-provider-gandi";
+            rev = "feature/livedns-key";
+            hash = "sha256-XNKMqVQ/tVG2OHyuBtBdrrZa4jFzCw8a5WLKELuqKkw=";
+            vendorHash = "sha256-uWTY8cFztXFrQQ7GW6/R+x9M6vHmsb934ldq+oeW5vk=";
+          })
         ]);
         cdktfProviders = pkgs.stdenvNoCC.mkDerivation {
           name = "cdktf-providers";
