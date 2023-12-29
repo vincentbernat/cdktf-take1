@@ -139,7 +139,11 @@ abstract class BasicZone extends Construct {
       (server) => !server.disabled && server.tags.includes("web")
     );
     this.www_A_AAAA(name, servers, { ...options, ttl: 60 * 60 * 2 });
-    this.record(name, "CAA", ['0 issue "buypass.com"', '0 issuewild ";"']);
+    this.record(name, "CAA", [
+      '0 issue "buypass.com"',
+      '0 issue "letsencrypt.org"',
+      '0 issuewild ";"',
+    ]);
     if (name === "@") {
       this.CNAME("_acme-challenge", `${this.name}.acme.luffy.cx.`);
     } else {
