@@ -515,6 +515,7 @@ export class Resources extends Construct {
       .www("media", servers)
       .www("www", servers)
       .www("haproxy", servers)
+      .www("insolites-en-mene", servers)
       .servers(servers)
       .CNAME("eizo", "eizo.y.luffy.cx.")
       .A_AAAA(
