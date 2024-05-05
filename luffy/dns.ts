@@ -150,7 +150,7 @@ abstract class BasicZone extends Construct {
       this.www_A_AAAA(name, servers, { ...options, ttl: 60 * 60 * 2 });
       this.record(name, "CAA", [
         '0 issue "letsencrypt.org"',
-        '0 issuewild "letsencrypt"',
+        '0 issuewild "letsencrypt.org"',
       ]);
       this.CNAME(
         `_acme-challenge.${name}`,
