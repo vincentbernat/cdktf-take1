@@ -139,10 +139,24 @@ abstract class BasicZone extends Construct {
       (server) => !server.disabled && server.tags.includes("web")
     );
     this.www_A_AAAA(name, servers, { ...options, ttl: 60 * 60 * 2 });
-    this.record(name, "CAA", ['0 issue "letsencrypt.org"', '0 issuewild ";"']);
     if (name === "@") {
+      this.record(name, "CAA", [
+        '0 issue "letsencrypt.org"',
+        '0 issuewild ";"',
+      ]);
       this.CNAME("_acme-challenge", `${this.name}.acme.luffy.cx.`);
+    } else if (name.startsWith("*.")) {
+      name = name.slice(2);
+      this.record(name, "CAA", ['0 issuewild "letsencrypt"']);
+      this.CNAME(
+        `_acme-challenge.${name}`,
+        `${name}.${this.name}.acme.luffy.cx.`
+      );
     } else {
+      this.record(name, "CAA", [
+        '0 issue "letsencrypt.org"',
+        '0 issuewild ";"',
+      ]);
       this.CNAME(
         `_acme-challenge.${name}`,
         `${name}.${this.name}.acme.luffy.cx.`
@@ -516,6 +530,7 @@ export class Resources extends Construct {
       .www("www", servers)
       .www("haproxy", servers)
       .www("insolites-en-mene", servers)
+      .www("*.pages", servers)
       .servers(servers)
       .CNAME("eizo", "eizo.y.luffy.cx.")
       .A_AAAA(
