@@ -147,7 +147,10 @@ abstract class BasicZone extends Construct {
       this.CNAME("_acme-challenge", `${this.name}.acme.luffy.cx.`);
     } else if (name.startsWith("*.")) {
       name = name.slice(2);
-      this.record(name, "CAA", ['0 issuewild "letsencrypt"']);
+      this.record(name, "CAA", [
+        '0 issue "letsencrypt.org"',
+        '0 issuewild "letsencrypt"',
+      ]);
       this.CNAME(
         `_acme-challenge.${name}`,
         `${name}.${this.name}.acme.luffy.cx.`
