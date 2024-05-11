@@ -476,7 +476,8 @@ export class Resources extends Construct {
       .sign()
       .registrar(providers.gandiVB)
       .www("@", servers)
-      .www("www", servers);
+      .www("www", servers)
+      .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."]);
 
     // une-oasis-une-ecole.fr (on Gandi)
     new GandiZone(this, "une-oasis-une-ecole.fr", providers.gandiRB)
