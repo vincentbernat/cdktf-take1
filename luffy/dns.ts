@@ -496,6 +496,13 @@ export class Resources extends Construct {
         "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWsJlP6+qLJS/RLvoNrMPRPrfzcQAuvZ1vUIJkqGauJ23zowQ9ni44XqzYyiBPx00c0QCQhO7oBEhnTeVGMcIfzNASeofZDfiu2dk7iOARpBeKT+EPJtXKS8cW0nz6cusANW7Mxa1Or1sUeV5+J0jFSAmeqWjginJPHJri7ZDA6QIDAQAB"
       );
 
+    // vincentbernat.com (on Gandi)
+    new GandiZone(this, "vincentbernat.com", providers.gandiVB)
+      .sign()
+      .registrar(providers.gandiVB)
+      .www("@", servers)
+      .www("www", servers);
+
     // bernat.im (not signed), on Route53, backup on Gandi
     MultiZone(
       new Route53Zone(this, "bernat.im", providers.aws).registrar(
