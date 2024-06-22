@@ -501,7 +501,8 @@ export class Resources extends Construct {
       .sign()
       .registrar(providers.gandiVB)
       .www("@", servers)
-      .www("www", servers);
+      .www("www", servers)
+      .fastmailMX();
 
     // bernat.im (not signed), on Route53, backup on Gandi
     MultiZone(
