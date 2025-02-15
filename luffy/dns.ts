@@ -479,6 +479,14 @@ export class Resources extends Construct {
       .www("www", servers)
       .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."]);
 
+    // le-val-insolite.fr (on Gandi)
+    new GandiZone(this, "le-val-insolite.fr", providers.gandiVB)
+      .sign()
+      .registrar(providers.gandiVB)
+      .www("@", servers)
+      .www("www", servers)
+      .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."]);
+
     // une-oasis-une-ecole.fr (on Gandi)
     new GandiZone(this, "une-oasis-une-ecole.fr", providers.gandiRB)
       .sign()
@@ -549,7 +557,6 @@ export class Resources extends Construct {
       .www("media", servers)
       .www("www", servers)
       .www("haproxy", servers)
-      .www("insolites-en-mene", servers)
       .www("*.pages", servers)
       .servers(servers)
       .CNAME("eizo", "eizo.y.luffy.cx.")
