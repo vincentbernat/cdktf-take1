@@ -471,14 +471,6 @@ export class Resources extends Construct {
       .www("media", servers)
       .fastmailMX();
 
-    // insolites-en-mene.fr (on Gandi)
-    new GandiZone(this, "insolites-en-mene.fr", providers.gandiVB)
-      .sign()
-      .registrar(providers.gandiVB)
-      .www("@", servers)
-      .www("www", servers)
-      .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."]);
-
     // le-val-insolite.fr (on Gandi)
     new GandiZone(this, "le-val-insolite.fr", providers.gandiVB)
       .sign()
