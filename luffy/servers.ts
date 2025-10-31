@@ -124,15 +124,15 @@ export class Resources extends Construct {
           this,
           "web02.luffy.cx",
           "45.90.160.60",
-          "2a0c:8881::948e:48ff:fe0d:d535",
+          "2a0c:8881:5:100::1",
           "sapinet"
         ),
         tags: [
           "web",
           "continent:EU",
           "continent:AF",
-          "gateway4:45.90.160.33",
-          "gateway6:fe80::200:ff:fe00:1",
+          "gateway4:100.100.100.1",
+          "gateway6:fe80::1",
         ],
         disabled: true,
       },
