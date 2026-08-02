@@ -559,6 +559,12 @@ export class Resources extends Construct {
           ttl: 60 * 60 * 2,
         })
       )
+      .A_AAAA(
+        "goatcounter",
+        servers.filter((server) => server.tags.includes("goatcounter"), {
+          ttl: 60 * 60 * 2,
+        })
+      )
       .NS("y", Fn.formatlist("%s.", [yLuffyCX.nameservers]))
       .record("y", "DS", [yLuffyCX.ksk!.dsRecord])
       .NS("acme", Fn.formatlist("%s.", [acmeLuffyCX.nameservers]))

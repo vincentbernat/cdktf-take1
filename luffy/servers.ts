@@ -129,6 +129,7 @@ export class Resources extends Construct {
         ),
         tags: [
           "web",
+          "goatcounter",
           "continent:EU",
           "continent:AF",
           "gateway4:100.100.100.1",
