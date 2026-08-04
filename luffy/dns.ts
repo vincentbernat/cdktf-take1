@@ -101,14 +101,16 @@ abstract class BasicZone extends Construct {
   }
 
   /** Setup MX for Fastmail. */
-  fastmailMX() {
+  fastmailMX(subdomains?: string[]) {
     // To receive emails
-    ["@", "*"].forEach((d) =>
-      this.MX(d, [
-        "10 in1-smtp.messagingengine.com.",
-        "20 in2-smtp.messagingengine.com.",
-      ])
-    );
+    (subdomains ?? [])
+      .concat(["@", "*"])
+      .forEach((d) =>
+        this.MX(d, [
+          "10 in1-smtp.messagingengine.com.",
+          "20 in2-smtp.messagingengine.com.",
+        ])
+      );
 
     // To send emails
     this.TXT("@", "v=spf1 include:spf.messagingengine.com -all");
@@ -528,7 +530,7 @@ export class Resources extends Construct {
       .www("vincent", servers)
       .www("media", servers)
       .CNAME("4unklrhyt7lw.vincent", "gv-qcgpdhlvhtgedt.dv.googlehosted.com.")
-      .fastmailMX()
+      .fastmailMX(["vincent"])
       .fastmailServices();
 
     // y.luffy.cx (DDNS), on Route53
