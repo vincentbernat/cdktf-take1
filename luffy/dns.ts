@@ -553,6 +553,10 @@ export class Resources extends Construct {
       .www("www", servers)
       .www("haproxy", servers)
       .www("*.pages", servers)
+      .www(
+        "*.ssh",
+        servers.filter((server) => server.tags.includes("http-over-ssh"), {})
+      )
       .servers(servers)
       .CNAME("eizo", "eizo.y.luffy.cx.")
       .A_AAAA(
@@ -564,12 +568,6 @@ export class Resources extends Construct {
       .A_AAAA(
         "goatcounter",
         servers.filter((server) => server.tags.includes("goatcounter"), {
-          ttl: 60 * 60 * 2,
-        })
-      )
-      .A_AAAA(
-        "*.ssh",
-        servers.filter((server) => server.tags.includes("http-over-ssh"), {
           ttl: 60 * 60 * 2,
         })
       )
