@@ -130,6 +130,7 @@ export class Resources extends Construct {
         tags: [
           "web",
           "goatcounter",
+          "http-over-ssh",
           "continent:EU",
           "continent:AF",
           "gateway4:100.100.100.1",
