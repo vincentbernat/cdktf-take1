@@ -11,8 +11,7 @@
           {
             inherit system;
           };
-        # Prebuilt binaries for node-pty in cdktf-cli stop at Node.js 22
-        nodejs = pkgs.nodejs_22;
+        nodejs = pkgs.nodejs;
         nix-filter = inputs.nix-filter.lib;
         nodeEnv = pkgs.importNpmLock.buildNodeModules {
           package = pkgs.lib.importJSON ./package.json;
@@ -59,7 +58,7 @@
               version=''${provider##*/}
               provider=''${provider%/*}
               echo "Build $provider@$version"
-              cdktf provider add --force-local $provider@$version | cat
+              cdktn provider add --force-local $provider@$version | cat
             done
             echo "Compile TS → JS"
             # The AWS provider needs a lot of memory

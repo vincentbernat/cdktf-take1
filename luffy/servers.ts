@@ -1,4 +1,4 @@
-import { Fn, TerraformOutput } from "cdktf";
+import { Fn, TerraformOutput } from "cdktn";
 import { Construct } from "constructs";
 import { HcloudProvider } from "../.gen/providers/hcloud/provider";
 import { VultrProvider } from "../.gen/providers/vultr/provider";

@@ -1,4 +1,4 @@
-import { Fn } from "cdktf";
+import { Fn } from "cdktn";
 import { Construct } from "constructs";
 import { AwsProvider } from "../.gen/providers/aws/provider";
 import * as aws from "../.gen/providers/aws";

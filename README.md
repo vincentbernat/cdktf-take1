@@ -7,6 +7,7 @@ with it. Servers are then managed using NixOps. Check my
 
 [nixops-take1]: https://github.com/vincentbernat/nixops-take1
 [CDKTF]: https://developer.hashicorp.com/terraform/cdktf
+[CDK Terrain]: https://cdktn.io
 
 ## Interaction with NixOps
 
@@ -26,15 +27,15 @@ need to have Flakes support for this to work.
 
 ### CDKTF
 
-These are the commands specific to CDKTF.
+These are the commands specific to [CDK Terrain][], the community fork of CDKTF.
 
 ```console
-$ cdktf synth
-$ cdktf diff
-$ cdktf deploy
+$ cdktn synth
+$ cdktn diff
+$ cdktn deploy
 ```
 
-Alternatively, one may only use `cdktf synth`, then switch to OpenTofu commands
+Alternatively, one may only use `cdktn synth`, then switch to OpenTofu commands
 (they are far more flexible):
 
 ```console

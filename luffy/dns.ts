@@ -1,4 +1,4 @@
-import { Fn, TerraformOutput, Token } from "cdktf";
+import { Fn, TerraformOutput, Token } from "cdktn";
 import type { ServerArray } from "./servers";
 import type { Resources as KMSResources } from "./kms";
 import { Construct } from "constructs";

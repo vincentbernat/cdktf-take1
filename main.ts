@@ -1,5 +1,5 @@
 import { Construct } from "constructs";
-import { App, TerraformStack, TerraformVariable } from "cdktf";
+import { App, TerraformStack, TerraformVariable } from "cdktn";
 import { AwsProvider } from "./.gen/providers/aws/provider";
 import { HcloudProvider } from "./.gen/providers/hcloud/provider";
 import { VultrProvider } from "./.gen/providers/vultr/provider";
