@@ -23,6 +23,17 @@
           p.hashicorp_aws
           p.hetznercloud_hcloud
           p.vultr_vultr
+          # Not packaged in nixpkgs
+          (p.mkProvider {
+            owner = "BunnyWay";
+            repo = "terraform-provider-bunnynet";
+            rev = "v0.19.1";
+            hash = "sha256-tUPz7C4/vsYxD7hxYQBzXN7meZ0tzlhk82j1+hRG14Q=";
+            vendorHash = "sha256-8hKnunwXJbI2SdwcyqLPWAHIZGu0m7IEKpqBsIiqaJs=";
+            spdx = "MPL-2.0";
+            homepage = "https://registry.terraform.io/providers/BunnyWay/bunnynet";
+            provider-source-address = "registry.terraform.io/bunnyway/bunnynet";
+          })
           # Fork with the livedns_key resource
           (p.go-gandi_gandi.override {
             owner = "vincentbernat";

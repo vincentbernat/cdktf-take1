@@ -4,6 +4,7 @@ import { AwsProvider } from "./.gen/providers/aws/provider";
 import { HcloudProvider } from "./.gen/providers/hcloud/provider";
 import { VultrProvider } from "./.gen/providers/vultr/provider";
 import { GandiProvider } from "./.gen/providers/gandi/provider";
+import { BunnynetProvider } from "./.gen/providers/bunnynet/provider";
 import * as cloudfront from "./luffy/cloudfront";
 import * as servers from "./luffy/servers";
 import * as dns from "./luffy/dns";
@@ -54,6 +55,15 @@ class LuffyStack extends TerraformStack {
       }),
     };
 
+    /* Bunny provider */
+    const bunnyApiKey = new TerraformVariable(this, "bunnyApiKey", {
+      type: "string",
+      sensitive: true,
+    });
+    const bunnyProvider = new BunnynetProvider(this, "bunny", {
+      apiKey: bunnyApiKey.value,
+    });
+
     new cloudfront.Resources(this, awsProvider);
     const serverResource = new servers.Resources(this, {
       hcloud: hcloudProvider,
@@ -67,6 +77,7 @@ class LuffyStack extends TerraformStack {
         aws: awsProvider,
         gandiVB: gandiProviders.vb,
         gandiRB: gandiProviders.rb,
+        bunny: bunnyProvider,
       },
       kmsResource
     );

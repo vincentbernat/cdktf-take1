@@ -4,8 +4,10 @@ import type { Resources as KMSResources } from "./kms";
 import { Construct } from "constructs";
 import { AwsProvider } from "../.gen/providers/aws/provider";
 import { GandiProvider } from "../.gen/providers/gandi/provider";
+import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
 import * as gandi from "../.gen/providers/gandi";
 import * as aws from "../.gen/providers/aws";
+import * as bunnynet from "../.gen/providers/bunnynet";
 
 const RRTypes = [
   "A",
@@ -31,8 +33,12 @@ type SigningKey = {
 type CommonRecordOptions = {
   ttl: number;
 };
-type RecordOptions = GandiRecordOptions | Route53RecordOptions;
+type RecordOptions =
+  | GandiRecordOptions
+  | Route53RecordOptions
+  | BunnyRecordOptions;
 type GandiRecordOptions = Partial<CommonRecordOptions>;
+type BunnyRecordOptions = Partial<CommonRecordOptions>;
 type Route53RecordOptions = Partial<
   CommonRecordOptions &
     Pick<
@@ -438,6 +444,165 @@ class Route53Zone extends Zone {
   }
 }
 
+class BunnyZone extends Zone {
+  // Limitations:
+  //  - DS records are not supported by Bunny DNS
+  //  - SRV records with "." as target are skipped
+  public readonly zone: bunnynet.dnsZone.DnsZone;
+  private readonly scripts: Record<string, bunnynet.dnsScript.DnsScript> = {};
+  constructor(
+    scope: Construct,
+    name: string,
+    private readonly provider: BunnynetProvider
+  ) {
+    super(scope, `B-${name}`, name);
+    this.zone = new bunnynet.dnsZone.DnsZone(this, "zone", {
+      domain: name,
+      provider: this.provider,
+    });
+  }
+
+  record(
+    name: string,
+    rrtype: RR,
+    records: Records,
+    options?: BunnyRecordOptions
+  ) {
+    if (rrtype === "DS") throw new Error(`${rrtype} not supported by Bunny`);
+    if (!Array.isArray(records)) records = [records];
+    if (Token.isUnresolved(records))
+      throw new Error(`${rrtype} ${name}: records cannot be a token list`);
+    const fqdn = (value: string) =>
+      value.endsWith(".") ? value.slice(0, -1) : value;
+    records.forEach((record, idx) => {
+      let fields = {};
+      switch (rrtype) {
+        case "MX": {
+          const [priority, value] = record.split(" ");
+          fields = { priority: Number(priority), value: fqdn(value) };
+          break;
+        }
+        case "SRV": {
+          const [priority, weight, port, value] = record.split(" ");
+          // Bunny does not accept "." as target
+          if (value === ".") return;
+          fields = {
+            priority: Number(priority),
+            weight: Number(weight),
+            port: Number(port),
+            value: fqdn(value),
+          };
+          break;
+        }
+        case "CAA": {
+          const [, flags, tag, value] = record.match(/^(\d+) (\S+) "(.*)"$/)!;
+          fields = { flags: Number(flags), tag, value };
+          break;
+        }
+        case "CNAME":
+        case "NS":
+          fields = { value: fqdn(record) };
+          break;
+        default:
+          fields = { value: record };
+      }
+      new bunnynet.dnsRecord.DnsRecord(this, `${rrtype}-${name}-${idx}`, {
+        zone: this.zone.id,
+        type: rrtype,
+        name: name === "@" ? "" : name,
+        ttl: options?.ttl ?? defaultTTL,
+        value: "",
+        ...fields,
+        provider: this.provider,
+      });
+    });
+    return this;
+  }
+
+  // Use a script to return the closest online server
+  www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
+    const ttl = options?.ttl ?? defaultTTL;
+    const key = servers.map((server) => server.name.split(".")[0]).join("-");
+    if (!(key in this.scripts)) {
+      const serverList = (rrtype: "A" | "AAAA") =>
+        servers
+          .map((server) => {
+            const ip = rrtype === "A" ? server.ipv4Address : server.ipv6Address;
+            if (!ip) return null;
+            const { latitude, longitude } = server.geo;
+            return `new Server("${ip}", ${latitude}, ${longitude}, 100)`;
+          })
+          .filter((s): s is string => !!s)
+          .join(", ");
+      this.scripts[key] = new bunnynet.dnsScript.DnsScript(
+        this,
+        `script-${key}`,
+        {
+          name: `${this.name}-${key}`,
+          content: `
+var servers = {
+  A: [${serverList("A")}],
+  AAAA: [${serverList("AAAA")}],
+};
+var answers = {
+  A: function (ip) { return new ARecord(ip, ${ttl}); },
+  AAAA: function (ip) { return new AaaaRecord(ip, ${ttl}); },
+};
+
+export default function handleQuery(query) {
+  var type = query.request.queryType;
+  if (!servers[type] || servers[type].length === 0) return [];
+  var location = query.request.geoLocation;
+  var candidates = servers[type];
+  var selected = [];
+  while (selected.length < 2) {
+    var server = RoutingEngine.getClosestServer(candidates, location, true);
+    if (!server) break;
+    selected.push(server);
+    candidates = candidates.filter(function (s) { return s.ip !== server.ip; });
+  }
+  // All servers are down
+  if (selected.length === 0) selected = servers[type];
+  else if (selected.length === 1 && candidates.length > 0)
+    selected.push(RoutingEngine.getClosestServer(candidates, location, false));
+  return selected.map(function (s) { return answers[type](s.ip); });
+}
+`,
+          provider: this.provider,
+        }
+      );
+    }
+    new bunnynet.dnsRecord.DnsRecord(this, `Script-${name}`, {
+      zone: this.zone.id,
+      type: "Script",
+      name: name === "@" ? "" : name,
+      ttl,
+      value: Token.asString(this.scripts[key].id),
+      provider: this.provider,
+    });
+    return this;
+  }
+
+  sign() {
+    this.zone.dnssecEnabled = true;
+    this.ksk = {
+      publicKey: this.zone.dnssecPublicKey,
+      algorithm: this.zone.dnssecAlgorithm,
+      dsRecord: Fn.format("%d %d %d %s", [
+        this.zone.dnssecKeytag,
+        this.zone.dnssecAlgorithm,
+        this.zone.dnssecDigestType,
+        this.zone.dnssecDigest,
+      ]),
+    };
+    return this;
+  }
+
+  get nameservers() {
+    return [this.zone.nameserver1, this.zone.nameserver2];
+  }
+}
+
 export class Resources extends Construct {
   constructor(
     scope: Construct,
@@ -446,6 +611,7 @@ export class Resources extends Construct {
       aws: AwsProvider;
       gandiRB: GandiProvider;
       gandiVB: GandiProvider;
+      bunny: BunnynetProvider;
     },
     awsKMS: KMSResources
   ) {
@@ -522,7 +688,8 @@ export class Resources extends Construct {
       new Route53Zone(this, "bernat.ch", providers.aws)
         .sign(dnsCMK)
         .registrar(providers.gandiVB),
-      new GandiZone(this, "bernat.ch", providers.gandiVB).sign()
+      new GandiZone(this, "bernat.ch", providers.gandiVB).sign(),
+      new BunnyZone(this, "bernat.ch", providers.bunny).sign()
     )
       .www("@", servers)
       .www("vincent", servers)

@@ -108,7 +108,11 @@ class VultrServer extends Construct implements Server {
 }
 
 export type ServerArray = Array<
-  Server & { tags: string[]; disabled?: boolean }
+  Server & {
+    tags: string[];
+    geo: { latitude: number; longitude: number };
+    disabled?: boolean;
+  }
 >;
 
 export class Resources extends Construct {
@@ -136,6 +140,7 @@ export class Resources extends Construct {
           "gateway4:100.100.100.1",
           "gateway6:fe80::1",
         ],
+        geo: { latitude: 48.85, longitude: 2.35 },
       },
       {
         server: new HetznerServer(this, "web03.luffy.cx", providers.hcloud, {
@@ -143,6 +148,7 @@ export class Resources extends Construct {
           location: "hel1",
         }),
         tags: ["web", "isso", "continent:EU"],
+        geo: { latitude: 60.17, longitude: 24.94 },
       },
       {
         server: new HetznerServer(this, "web04.luffy.cx", providers.hcloud, {
@@ -150,6 +156,7 @@ export class Resources extends Construct {
           location: "nbg1",
         }),
         tags: ["web", "continent:EU", "continent:AF"],
+        geo: { latitude: 49.45, longitude: 11.08 },
       },
       {
         server: new HetznerServer(this, "web05.luffy.cx", providers.hcloud, {
@@ -158,6 +165,7 @@ export class Resources extends Construct {
           image: "39644359",
         }),
         tags: ["web", "continent:NA", "continent:SA"],
+        geo: { latitude: 39.04, longitude: -77.49 },
       },
       {
         server: new VultrServer(this, "web06.luffy.cx", providers.vultr, {
@@ -165,6 +173,7 @@ export class Resources extends Construct {
           region: "ord",
         }),
         tags: ["web", "continent:NA", "continent:SA"],
+        geo: { latitude: 41.88, longitude: -87.63 },
       },
     ].map(({ server, ...rest }) => ({
       ...(({ name, ipv4Address, ipv6Address, hardware }) => ({
