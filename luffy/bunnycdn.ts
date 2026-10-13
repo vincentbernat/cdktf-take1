@@ -1,6 +1,7 @@
 import { Construct } from "constructs";
 import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
 import { Pullzone } from "../.gen/providers/bunnynet/pullzone";
+import { PullzoneHostname } from "../.gen/providers/bunnynet/pullzone-hostname";
 
 /* Pull zone for media files. */
 class MediaPullzone extends Construct {
@@ -10,7 +11,7 @@ class MediaPullzone extends Construct {
     protected provider: BunnynetProvider
   ) {
     super(scope, domain);
-    new Pullzone(this, domain, {
+    const pullzone = new Pullzone(this, domain, {
       provider,
       name: domain.replace(/\./g, "-"),
       origin: {
@@ -27,6 +28,14 @@ class MediaPullzone extends Construct {
       optimizerEnabled: false,
       tlsLevel: "ModernOnly",
       tlsSupport: [],
+    });
+    // Existing b-cdn.net hostname
+    new PullzoneHostname(this, "hostname", {
+      provider,
+      pullzone: pullzone.id,
+      name: `${pullzone.name}.${pullzone.cdnDomain}`,
+      tlsEnabled: true,
+      forceSsl: true,
     });
   }
 }
