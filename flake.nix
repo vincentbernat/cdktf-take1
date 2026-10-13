@@ -34,7 +34,7 @@
             homepage = "https://registry.terraform.io/providers/BunnyWay/bunnynet";
             provider-source-address = "registry.terraform.io/bunnyway/bunnynet";
           }).overrideAttrs (old: {
-            patches = (old.patches or [ ]) ++ [ ./patches/bunnydns-srv-null-target.patch ];
+            patches = (old.patches or [ ]) ++ [ ./misc/bunnydns-srv-null-target.patch ];
           }))
           # Fork with the livedns_key resource
           (p.go-gandi_gandi.override {
