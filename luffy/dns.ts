@@ -22,7 +22,7 @@ const RRTypes = [
 ] as const;
 const defaultTTL = 86400;
 
-type RR = typeof RRTypes[number];
+type RR = (typeof RRTypes)[number];
 
 type Records = string[] | string;
 type SigningKey = {
@@ -550,7 +550,7 @@ var answers = {
 };
 
 export default function handleQuery(query) {
-  var type = query.request.queryType;
+  var type = String(query.request.queryType).toUpperCase();
   if (!servers[type] || servers[type].length === 0) return [];
   var location = query.request.geoLocation;
   var candidates = servers[type];
