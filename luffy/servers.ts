@@ -161,7 +161,7 @@ export class Resources extends Construct {
       },
       {
         server: new VultrServer(this, "web06.luffy.cx", providers.vultr, {
-          plan: "vc2-1c-1gb",
+          plan: "vc2-1c-2gb",
           region: "ord",
         }),
         tags: ["web", "continent:NA", "continent:SA"],
