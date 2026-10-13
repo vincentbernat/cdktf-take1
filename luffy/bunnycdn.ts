@@ -16,10 +16,17 @@ class MediaPullzone extends Construct {
       origin: {
         type: "OriginUrl",
         url: `https://${domain}`,
+        verifySsl: true,
       },
       routing: { tier: "Standard" },
       cacheVary: ["avif", "webp"],
+      cacheStale: ["offline"],
       logEnabled: false,
+      websocketsEnabled: false,
+      corsEnabled: false,
+      optimizerEnabled: false,
+      tlsLevel: "ModernOnly",
+      tlsSupport: [],
     });
   }
 }
