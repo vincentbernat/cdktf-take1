@@ -14,7 +14,7 @@ When there is a change, the stack output should be exported to NixOps:
 
 ```console
 $ cd cdktf.out/stacks/cdktf-take1
-$ terraform output -json > ~-automation/nixops-take1/cdktf.json
+$ tofu output -json > ~-automation/nixops-take1/cdktf.json
 ```
 
 ## Various commands
@@ -34,24 +34,24 @@ $ cdktf diff
 $ cdktf deploy
 ```
 
-Alternatively, one may only use `cdktf synth`, then switch to Terraform commands
+Alternatively, one may only use `cdktf synth`, then switch to OpenTofu commands
 (they are far more flexible):
 
 ```console
 $ cd cdktf.out/stacks/cdktf-take1
-$ terraform init
-$ terraform plan --out plan
-$ terraform plan --out plan --refresh=false
-$ terraform apply plan
-$ terraform output -json > ~-automation/nixops-take1/cdktf.json
+$ tofu init
+$ tofu plan --out plan
+$ tofu plan --out plan --refresh=false
+$ tofu apply plan
+$ tofu output -json > ~-automation/nixops-take1/cdktf.json
 ```
 
 Notably, one can import resources this way:
 
 ```console
-$ terraform state list
-$ terraform show --json plan | jq -r '.planned_values.root_module.resources[].address'
-$ terraform import aws_cloudfront_distribution.cdktftake1_mediabernatch_1FD37B2F E1KREAZ6F4767X
+$ tofu state list
+$ tofu show --json plan | jq -r '.planned_values.root_module.resources[].address'
+$ tofu import aws_cloudfront_distribution.cdktftake1_mediabernatch_1FD37B2F E1KREAZ6F4767X
 ```
 
 To get the resources from Pulumi, one can use:

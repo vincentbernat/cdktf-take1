@@ -1,8 +1,8 @@
 {
   inputs = {
     nixpkgs.url = "nixpkgs";
-    # Terraform and its providers stay on an older version
-    nixpkgs-terraform.url = "github:NixOS/nixpkgs/cae3751e9f74eea29c573d6c2f14523f41c2821a";
+    # Terraform providers stay on an older version
+    nixpkgs-providers.url = "github:NixOS/nixpkgs/cae3751e9f74eea29c573d6c2f14523f41c2821a";
     nix-filter.url = "github:numtide/nix-filter";
     flake-utils.url = "github:numtide/flake-utils";
   };
@@ -13,7 +13,7 @@
           {
             inherit system;
           };
-        pkgsTerraform = import inputs.nixpkgs-terraform
+        pkgsProviders = import inputs.nixpkgs-providers
           {
             inherit system;
           };
@@ -26,11 +26,11 @@
           inherit nodejs;
           derivationArgs.npmRebuildFlags = "--ignore-scripts";
         };
-        terraform = pkgsTerraform.terraform.withPlugins (p: [
-          p.aws
-          p.hcloud
-          p.vultr
-          (p.gandi.override {
+        tofu = pkgs.opentofu.withPlugins (_: with pkgsProviders.terraform-providers; [
+          aws
+          hcloud
+          vultr
+          (gandi.override {
             owner = "vincentbernat";
             repo = "terraform-provider-gandi";
             rev = "feature/livedns-key";
@@ -42,7 +42,7 @@
           name = "cdktf-providers";
           nativeBuildInputs = [
             nodejs
-            terraform
+            tofu
           ];
           src = nix-filter {
             root = ./.;
@@ -54,11 +54,12 @@
             export HOME=$(mktemp -d)
             export CHECKPOINT_DISABLE=1
             export DISABLE_VERSION_CHECK=1
+            export TERRAFORM_BINARY_NAME=tofu
             export PATH=${nodeEnv}/node_modules/.bin:$PATH
             ln -nsf ${nodeEnv}/node_modules node_modules
 
-            # Build all providers we have in terraform
-            for provider in $(cd ${terraform}/libexec/terraform-providers; echo */*/*/*); do
+            # Build all providers we have in OpenTofu
+            for provider in $(cd ${tofu}/libexec/terraform-providers; echo */*/*/*); do
               version=''${provider##*/}
               provider=''${provider%/*}
               echo "Build $provider@$version"
@@ -84,7 +85,7 @@
           name = "cdktf-take1";
           buildInputs = [
             nodejs
-            terraform
+            tofu
           ];
           shellHook = ''
             # No telemetry
@@ -93,6 +94,8 @@
             export CDKTF_DISABLE_PLUGIN_CACHE_ENV=1
             # Do not check version
             export DISABLE_VERSION_CHECK=1
+            # Use OpenTofu instead of Terraform
+            export TERRAFORM_BINARY_NAME=tofu
             # Access to node modules
             export PATH=$PWD/node_modules/.bin:$PATH
             ln -nsf ${nodeEnv}/node_modules node_modules
