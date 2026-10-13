@@ -60,12 +60,12 @@ To get the resources from Pulumi, one can use:
 $ cat .pulumi/stacks/dev.json | jq -r '.checkpoint.latest.resources[] | (.urn + " → " + .id)' | grep rdns
 ```
 
-### Yarn (for JavaScript dependencies)
+### npm (for JavaScript dependencies)
 
 ```console
-$ yarn outdated
-$ yarn install --modules-folder ~/tmp/node_modules --ignore-scripts
-$ yarn upgrade-interactive --modules-folder ~/tmp/node_modules --ignore-scripts --latest
+$ npm outdated
+$ npm update --package-lock-only --ignore-scripts
+$ npm install --package-lock-only --ignore-scripts typescript@latest
 ```
 
 ### Nix

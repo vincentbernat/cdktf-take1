@@ -1,6 +1,8 @@
 {
   inputs = {
     nixpkgs.url = "nixpkgs";
+    # Terraform and its providers stay on an older version
+    nixpkgs-terraform.url = "github:NixOS/nixpkgs/cae3751e9f74eea29c573d6c2f14523f41c2821a";
     nix-filter.url = "github:numtide/nix-filter";
     flake-utils.url = "github:numtide/flake-utils";
   };
@@ -11,15 +13,20 @@
           {
             inherit system;
           };
+        pkgsTerraform = import inputs.nixpkgs-terraform
+          {
+            inherit system;
+          };
+        # Prebuilt binaries for node-pty in cdktf-cli stop at Node.js 22
+        nodejs = pkgs.nodejs_22;
         nix-filter = inputs.nix-filter.lib;
-        # In the future: https://github.com/canva-public/js2nix
-        nodeEnv = pkgs.mkYarnModules {
-          pname = "cdktf-take1-js-modules";
-          version = "1.0.0";
-          packageJSON = ./package.json;
-          yarnLock = ./yarn.lock;
+        nodeEnv = pkgs.importNpmLock.buildNodeModules {
+          package = pkgs.lib.importJSON ./package.json;
+          packageLock = pkgs.lib.importJSON ./package-lock.json;
+          inherit nodejs;
+          derivationArgs.npmRebuildFlags = "--ignore-scripts";
         };
-        terraform = pkgs.terraform.withPlugins (p: [
+        terraform = pkgsTerraform.terraform.withPlugins (p: [
           p.aws
           p.hcloud
           p.vultr
@@ -34,7 +41,7 @@
         cdktfProviders = pkgs.stdenvNoCC.mkDerivation {
           name = "cdktf-providers";
           nativeBuildInputs = [
-            pkgs.nodejs
+            nodejs
             terraform
           ];
           src = nix-filter {
@@ -68,16 +75,15 @@
       in
       {
         apps = {
-          yarn = {
+          npm = {
             type = "app";
-            program = "${pkgs.yarn}/bin/yarn";
+            program = "${nodejs}/bin/npm";
           };
         };
         devShells.default = pkgs.mkShell {
           name = "cdktf-take1";
           buildInputs = [
-            pkgs.nodejs
-            pkgs.yarn
+            nodejs
             terraform
           ];
           shellHook = ''
