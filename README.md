@@ -40,7 +40,7 @@ Alternatively, one may only use `cdktn synth`, then switch to OpenTofu commands
 
 ```console
 $ cd cdktf.out/stacks/cdktf-take1
-$ tofu init --upgrade
+$ rm -f .terraform.lock.hcl && tofu init
 $ tofu plan --out plan
 $ tofu plan --out plan --refresh=false
 $ tofu apply plan
