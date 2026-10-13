@@ -1,4 +1,4 @@
-import { Fn, TerraformOutput } from "cdktf";
+import { Fn, TerraformOutput, Token } from "cdktf";
 import type { ServerArray } from "./servers";
 import type { Resources as KMSResources } from "./kms";
 import { Construct } from "constructs";
@@ -267,13 +267,13 @@ class GandiZone extends Zone {
       ...options,
       provider: this.provider,
     };
-    if (!Array.isArray(records)) records = [records];
-    if (rrtype === "TXT") records = Fn.formatlist('\\"%s\\"', [records]);
+    let values = Array.isArray(records) ? records : [records];
+    if (rrtype === "TXT") values = Fn.formatlist('\\"%s\\"', [values]);
     new gandi.livednsRecord.LivednsRecord(this, `${rrtype}-${name}`, {
       zone: this.name,
       type: rrtype,
       name,
-      values: records,
+      values,
       ...providerOptions,
     });
     return this;
@@ -571,9 +571,9 @@ export class Resources extends Construct {
           ttl: 60 * 60 * 2,
         })
       )
-      .NS("y", Fn.formatlist("%s.", [yLuffyCX.nameservers]))
+      .NS("y", Token.asList(Fn.formatlist("%s.", [yLuffyCX.nameservers])))
       .record("y", "DS", [yLuffyCX.ksk!.dsRecord])
-      .NS("acme", Fn.formatlist("%s.", [acmeLuffyCX.nameservers]))
+      .NS("acme", Token.asList(Fn.formatlist("%s.", [acmeLuffyCX.nameservers])))
       .record("acme", "DS", [acmeLuffyCX.ksk!.dsRecord]);
 
     new TerraformOutput(this, "acme-zone", {
