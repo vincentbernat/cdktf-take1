@@ -39,7 +39,7 @@ Alternatively, one may only use `cdktf synth`, then switch to OpenTofu commands
 
 ```console
 $ cd cdktf.out/stacks/cdktf-take1
-$ tofu init
+$ tofu init --upgrade
 $ tofu plan --out plan
 $ tofu plan --out plan --refresh=false
 $ tofu apply plan

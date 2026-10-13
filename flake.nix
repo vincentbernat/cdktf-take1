@@ -28,7 +28,8 @@
         };
         tofu = pkgs.opentofu.withPlugins (_: with pkgsProviders.terraform-providers; [
           aws
-          hcloud
+          # The Hetzner API does not return datacenter anymore
+          pkgs.terraform-providers.hetznercloud_hcloud
           vultr
           (gandi.override {
             owner = "vincentbernat";
