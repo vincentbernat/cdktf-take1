@@ -24,7 +24,7 @@
           p.hetznercloud_hcloud
           p.vultr_vultr
           # Not packaged in nixpkgs
-          (p.mkProvider {
+          ((p.mkProvider {
             owner = "BunnyWay";
             repo = "terraform-provider-bunnynet";
             rev = "v0.19.1";
@@ -33,7 +33,9 @@
             spdx = "MPL-2.0";
             homepage = "https://registry.terraform.io/providers/BunnyWay/bunnynet";
             provider-source-address = "registry.terraform.io/bunnyway/bunnynet";
-          })
+          }).overrideAttrs (old: {
+            patches = (old.patches or [ ]) ++ [ ./patches/bunnydns-srv-null-target.patch ];
+          }))
           # Fork with the livedns_key resource
           (p.go-gandi_gandi.override {
             owner = "vincentbernat";

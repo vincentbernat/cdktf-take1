@@ -445,9 +445,7 @@ class Route53Zone extends Zone {
 }
 
 class BunnyZone extends Zone {
-  // Limitations:
-  //  - DS records are not supported by Bunny DNS
-  //  - SRV records with "." as target are skipped
+  // DS records are not supported by Bunny DNS
   public readonly zone: bunnynet.dnsZone.DnsZone;
   private readonly scripts: Record<string, bunnynet.dnsScript.DnsScript> = {};
   constructor(
@@ -473,7 +471,7 @@ class BunnyZone extends Zone {
     if (Token.isUnresolved(records))
       throw new Error(`${rrtype} ${name}: records cannot be a token list`);
     const fqdn = (value: string) =>
-      value.endsWith(".") ? value.slice(0, -1) : value;
+      value !== "." && value.endsWith(".") ? value.slice(0, -1) : value;
     records.forEach((record, idx) => {
       let fields = {};
       switch (rrtype) {
@@ -484,8 +482,6 @@ class BunnyZone extends Zone {
         }
         case "SRV": {
           const [priority, weight, port, value] = record.split(" ");
-          // Bunny does not accept "." as target
-          if (value === ".") return;
           fields = {
             priority: Number(priority),
             weight: Number(weight),
