@@ -372,11 +372,9 @@ class Route53Zone extends Zone {
       this.A_AAAA(name, rrs[rr], {
         ...options,
         setIdentifier: `geo-${geotag}-${value}`,
-        geolocationRoutingPolicy: [
-          {
-            [geotag]: value,
-          },
-        ],
+        geolocationRoutingPolicy: {
+          [geotag]: value,
+        },
       });
     }
     return this;

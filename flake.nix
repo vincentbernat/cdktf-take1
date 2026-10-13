@@ -1,8 +1,6 @@
 {
   inputs = {
     nixpkgs.url = "nixpkgs";
-    # Terraform providers stay on an older version
-    nixpkgs-providers.url = "github:NixOS/nixpkgs/cae3751e9f74eea29c573d6c2f14523f41c2821a";
     nix-filter.url = "github:numtide/nix-filter";
     flake-utils.url = "github:numtide/flake-utils";
   };
@@ -10,10 +8,6 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import inputs.nixpkgs
-          {
-            inherit system;
-          };
-        pkgsProviders = import inputs.nixpkgs-providers
           {
             inherit system;
           };
@@ -26,15 +20,16 @@
           inherit nodejs;
           derivationArgs.npmRebuildFlags = "--ignore-scripts";
         };
-        tofu = pkgs.opentofu.withPlugins (_: with pkgsProviders.terraform-providers; [
-          aws
-          # The Hetzner API does not return datacenter anymore
-          pkgs.terraform-providers.hetznercloud_hcloud
-          vultr
-          (gandi.override {
+        tofu = pkgs.opentofu.withPlugins (p: [
+          p.hashicorp_aws
+          p.hetznercloud_hcloud
+          p.vultr_vultr
+          # Fork with the livedns_key resource
+          (p.go-gandi_gandi.override {
             owner = "vincentbernat";
             repo = "terraform-provider-gandi";
             rev = "feature/livedns-key";
+            version = "2.2.0";
             hash = "sha256-XNKMqVQ/tVG2OHyuBtBdrrZa4jFzCw8a5WLKELuqKkw=";
             vendorHash = "sha256-uWTY8cFztXFrQQ7GW6/R+x9M6vHmsb934ldq+oeW5vk=";
           })
@@ -67,7 +62,8 @@
               cdktf provider add --force-local $provider@$version | cat
             done
             echo "Compile TS → JS"
-            tsc
+            # The AWS provider needs a lot of memory
+            NODE_OPTIONS=--max-old-space-size=8192 tsc
           '';
           installPhase = ''
             mv .gen $out
