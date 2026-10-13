@@ -6,6 +6,7 @@ import { VultrProvider } from "./.gen/providers/vultr/provider";
 import { GandiProvider } from "./.gen/providers/gandi/provider";
 import { BunnynetProvider } from "./.gen/providers/bunnynet/provider";
 import * as cloudfront from "./luffy/cloudfront";
+import * as bunnycdn from "./luffy/bunnycdn";
 import * as servers from "./luffy/servers";
 import * as dns from "./luffy/dns";
 import * as kms from "./luffy/kms";
@@ -65,6 +66,7 @@ class LuffyStack extends TerraformStack {
     });
 
     new cloudfront.Resources(this, awsProvider);
+    new bunnycdn.Resources(this, bunnyProvider);
     const serverResource = new servers.Resources(this, {
       hcloud: hcloudProvider,
       vultr: vultrProvider,
