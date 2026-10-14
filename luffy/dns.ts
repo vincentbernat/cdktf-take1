@@ -679,7 +679,7 @@ export class Resources extends Construct {
       .www("vincent", servers)
       .fastmailMX();
 
-    // bernat.ch, on Route 53, backup on Gandi
+    // bernat.ch, on Route 53, backup on Gandi and Bunny (not 100% functional)
     MultiZone(
       new Route53Zone(this, "bernat.ch", providers.aws)
         .sign(dnsCMK)
