@@ -29,6 +29,7 @@ class MediaPullzone extends Construct {
       safehopConnectionTimeout: 3,
       safehopResponseTimeout: 5,
       logEnabled: false,
+      logAnonymized: true,
       websocketsEnabled: false,
       corsEnabled: false,
       optimizerEnabled: false,
