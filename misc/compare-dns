@@ -4,22 +4,20 @@
 For names using a script on Bunny, A and AAAA records only need to be a
 subset of each other."""
 
+import argparse
 import json
 import re
 import subprocess
 import sys
-
-CONFIG = "cdktf.out/stacks/cdktf-take1/cdk.tf.json"
-SERVERS = {"gandi": "ns1.gandi.net", "bunny": "kiki.bunny.net"}
 
 
 def fqdn(name, zone):
     return zone if name in ("@", "") else f"{name}.{zone}"
 
 
-def wanted(zone):
+def wanted(config, zone):
     """Return the (name, type) pairs to check and the names using a script."""
-    resources = json.load(open(CONFIG))["resource"]
+    resources = json.load(open(config))["resource"]
     pairs = set()
     for r in resources.get("gandi_livedns_record", {}).values():
         if r["zone"] == zone:
@@ -58,13 +56,35 @@ def query(server, name, rrtype):
 
 
 def main():
-    zone = sys.argv[1] if len(sys.argv) > 1 else "bernat.ch"
-    pairs, scripted = wanted(zone)
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0],
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("zone", help="zone to compare")
+    parser.add_argument(
+        "--config",
+        default="cdktf.out/stacks/cdktf-take1/cdk.tf.json",
+        help="synthesized configuration",
+    )
+    parser.add_argument(
+        "--gandi",
+        default="ns1.gandi.net",
+        help="Gandi nameserver to query",
+    )
+    parser.add_argument(
+        "--bunny",
+        default="kiki.bunny.net",
+        help="Bunny nameserver to query",
+    )
+    args = parser.parse_args()
+    servers = {"gandi": args.gandi, "bunny": args.bunny}
+    zone = args.zone
+    pairs, scripted = wanted(args.config, zone)
     differences = 0
     for name in scripted:
         pairs |= {(name, "A"), (name, "AAAA")}
     for name, rrtype in sorted(pairs):
-        results = {k: query(s, name, rrtype) for k, s in SERVERS.items()}
+        results = {k: query(s, name, rrtype) for k, s in servers.items()}
         gandi, bunny = set(results["gandi"]), set(results["bunny"])
         if name in scripted and rrtype in ("A", "AAAA"):
             # Bunny only returns the closest servers
