@@ -80,6 +80,47 @@
             ln -nsf ${nodeEnv}/node_modules $out/node_modules
           '';
         };
+        deploy = pkgs.writeShellApplication {
+          name = "deploy";
+          runtimeInputs = [
+            nodejs
+            tofu
+          ];
+          text = ''
+            root=$(git rev-parse --show-toplevel)
+            cd "$root"
+
+            cdktn synth
+            npm test
+
+            cd cdktf.out/stacks/cdktf-take1
+            rm -f .terraform.lock.hcl
+            tofu init
+            status=0
+            tofu plan -out plan -detailed-exitcode "$@" || status=$?
+            case $status in
+              0)
+                echo "No changes."
+                ;;
+              2)
+                read -r -p "Apply this plan? [y/N] " answer < /dev/tty
+                case $answer in
+                  y|Y|yes) tofu apply plan ;;
+                  *)
+                    echo "Plan not applied." >&2
+                    exit 1
+                    ;;
+                esac
+                ;;
+              *)
+                exit "$status"
+                ;;
+            esac
+
+            output=$root/../nixops-take1/cdktf.json
+            tofu output -json > "$output"
+          '';
+        };
       in
       {
         apps = {
@@ -93,6 +134,7 @@
           buildInputs = [
             nodejs
             tofu
+            deploy
           ];
           shellHook = ''
             # No telemetry

@@ -25,12 +25,24 @@ $ tofu output -json > ~-automation/nixops-take1/cdktf.json
 Use `nix develop -c $SHELL` to enter the appropriate environment. You
 need to have Flakes support for this to work.
 
+### Deploy
+
+The `deploy` command, available in the shell, runs `cdktn synth`, the tests,
+`tofu init` and `tofu plan`. It asks for a confirmation before applying the
+plan, then exports the outputs to `../nixops-take1/cdktf.json`. Arguments are
+given to `tofu plan`:
+
+```console
+$ deploy
+$ deploy --refresh=false
+```
+
 ### CDKTF
 
 These are the commands specific to [CDK Terrain][], the community fork of CDKTF.
 
 ```console
-$ cdktn synth
+$ cdktn synth && npm test
 $ cdktn diff
 $ cdktn deploy
 ```
@@ -59,14 +71,6 @@ To get the resources from Pulumi, one can use:
 
 ```console
 $ cat .pulumi/stacks/dev.json | jq -r '.checkpoint.latest.resources[] | (.urn + " → " + .id)' | grep rdns
-```
-
-### Tests
-
-Unit tests are in `__tests__/`.
-
-```console
-$ npm test
 ```
 
 ### npm (for JavaScript dependencies)
