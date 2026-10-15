@@ -1,47 +1,10 @@
-import { Testing } from "cdktn";
 import "cdktn/lib/testing/adapters/jest";
 import * as vm from "vm";
-import { AwsProvider } from "../.gen/providers/aws/provider";
-import { GandiProvider } from "../.gen/providers/gandi/provider";
-import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
 import { DnsRecord } from "../.gen/providers/bunnynet/dns-record";
 import { DnsZone } from "../.gen/providers/bunnynet/dns-zone";
-import * as dns from "../luffy/dns";
-import * as kms from "../luffy/kms";
-import type { ServerArray } from "../luffy/servers";
+import { servers, synthesizeDns } from "./helpers";
 
-const server = (
-  id: number,
-  latitude: number,
-  longitude: number
-): ServerArray[number] => ({
-  name: `web0${id}.luffy.cx`,
-  ipv4Address: `192.0.2.${id}`,
-  ipv6Address: `2001:db8::${id}`,
-  hardware: "test",
-  tags: ["web"],
-  geo: { latitude, longitude },
-});
-
-const servers: ServerArray = [
-  server(2, 48.85, 2.35), // Paris
-  server(3, 60.17, 24.94), // Helsinki
-  server(4, 49.45, 11.08), // Nuremberg
-  server(5, 39.04, -77.49), // Ashburn
-  server(6, 41.88, -87.63), // Chicago
-];
-
-const synthesized = Testing.synthScope((scope) => {
-  const aws = new AwsProvider(scope, "aws", { region: "us-east-1" });
-  const gandi = new GandiProvider(scope, "gandi", { key: "test" });
-  const bunny = new BunnynetProvider(scope, "bunny", { apiKey: "test" });
-  new dns.Resources(
-    scope,
-    servers,
-    { aws, gandiVB: gandi, gandiRB: gandi, bunny },
-    new kms.Resources(scope, aws)
-  );
-});
+const synthesized = synthesizeDns();
 
 describe("Bunny zone", () => {
   it("is signed", () => {
