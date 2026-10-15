@@ -544,14 +544,21 @@ export default function handleQuery(query) {
   if (!family) return [];
   var available = servers.filter(function (s) { return s[family]; });
   if (available.length === 0) return [];
+  var everything = function () {
+    return available.map(function (s) { return answers[type](s[family]); });
+  };
   try {
+    // Routing and monitoring only work with IPv4 addresses: select servers
+    // using their IPv4 address, then answer with the requested family.
+    var byIpv4 = {};
     var all = [];
     var online = [];
     available.forEach(function (s) {
-      var server = new Server(s[family], s.latitude, s.longitude, 100);
+      if (!s.ipv4) return;
+      var server = new Server(s.ipv4, s.latitude, s.longitude, 100);
+      byIpv4[s.ipv4] = s;
       all.push(server);
-      // Monitoring does not support IPv6, use IPv4 for both families
-      if (!s.ipv4 || Monitoring.getStatus(s.ipv4).isOnline) online.push(server);
+      if (Monitoring.getStatus(s.ipv4).isOnline) online.push(server);
     });
     var location = query.request.geoLocation;
     var selected = [];
@@ -561,16 +568,18 @@ export default function handleQuery(query) {
       online = online.filter(function (s) { return s.ip !== server.ip; });
     }
     // All servers are down
-    if (selected.length === 0) selected = all;
-    else if (selected.length === 1) {
+    if (selected.length === 0) return everything();
+    if (selected.length === 1) {
       var others = all.filter(function (s) { return s.ip !== selected[0].ip; });
       if (others.length > 0)
         selected.push(RoutingEngine.getClosestServer(others, location, false));
     }
-    return selected.map(function (s) { return answers[type](s.ip); });
+    return selected.map(function (s) {
+      return answers[type](byIpv4[s.ip][family]);
+    });
   } catch (e) {
     // Return all servers if anything goes wrong
-    return available.map(function (s) { return answers[type](s[family]); });
+    return everything();
   }
 }
 `,
