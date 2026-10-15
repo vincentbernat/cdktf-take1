@@ -240,11 +240,15 @@ abstract class Zone extends BasicZone {
 
   /** Register the zone to Gandi. */
   registrar(provider: GandiProvider, dnssec: boolean = true) {
-    new gandi.nameservers.Nameservers(this, "NS", {
-      domain: this.name,
-      nameservers: this.nameservers,
-      provider: provider,
-    });
+    new gandi.nameservers.Nameservers(
+      this.node.scope as Construct,
+      `NS-${this.name}`,
+      {
+        domain: this.name,
+        nameservers: this.nameservers,
+        provider: provider,
+      }
+    );
     if (dnssec) {
       if (!this.ksk) throw new Error(`${this.name} was not signed`);
       new gandi.dnssecKey.DnssecKey(this, "NSSEC", {
