@@ -531,55 +531,48 @@ class BunnyZone extends Zone {
         {
           name: `${this.name}-${key}`,
           content: `
-var servers = ${JSON.stringify(serverList, null, 2)};
-var families = { A: "ipv4", AAAA: "ipv6" };
-var answers = {
-  A: function (ip) { return new ARecord(ip, ${ttl}); },
-  AAAA: function (ip) { return new AaaaRecord(ip, ${ttl}); },
+const servers = ${JSON.stringify(serverList, null, 2)};
+const families = { A: "ipv4", AAAA: "ipv6" };
+const answers = {
+  A: (ip) => new ARecord(ip, ${ttl}),
+  AAAA: (ip) => new AaaaRecord(ip, ${ttl}),
 };
 
 export default function handleQuery(query) {
-  var type = String(query.request.queryType).toUpperCase();
-  var family = families[type];
-  if (!family) return [];
-  var available = servers.filter(function (s) { return s[family]; });
+  const type = String(query.request.queryType).toUpperCase();
+  const family = families[type];
+  const available = servers.filter((s) => s[family]);
   if (available.length === 0) return [];
-  var everything = function () {
-    return available.map(function (s) { return answers[type](s[family]); });
-  };
   try {
     // Routing and monitoring only work with IPv4 addresses: select servers
     // using their IPv4 address, then answer with the requested family.
-    var byIpv4 = {};
-    var all = [];
-    var online = [];
-    available.forEach(function (s) {
-      if (!s.ipv4) return;
-      var server = new Server(s.ipv4, s.latitude, s.longitude, 100);
+    const byIpv4 = {};
+    const online = [];
+    const offline = [];
+    for (const s of available) {
+      if (!s.ipv4) continue;
+      const server = new Server(s.ipv4, s.latitude, s.longitude, 100);
       byIpv4[s.ipv4] = s;
-      all.push(server);
       if (Monitoring.getStatus(s.ipv4).isOnline) online.push(server);
-    });
-    var location = query.request.geoLocation;
-    var selected = [];
-    while (selected.length < 2 && online.length > 0) {
-      var server = RoutingEngine.getClosestServer(online, location, false);
-      selected.push(server);
-      online = online.filter(function (s) { return s.ip !== server.ip; });
+      else offline.push(server);
     }
-    // All servers are down
-    if (selected.length === 0) return everything();
-    if (selected.length === 1) {
-      var others = all.filter(function (s) { return s.ip !== selected[0].ip; });
-      if (others.length > 0)
-        selected.push(RoutingEngine.getClosestServer(others, location, false));
-    }
-    return selected.map(function (s) {
-      return answers[type](byIpv4[s.ip][family]);
-    });
+    const location = query.request.geoLocation;
+    const selected = [];
+    const pick = (list) => {
+      let candidates = list;
+      while (selected.length < 2 && candidates.length > 0) {
+        const server = RoutingEngine.getClosestServer(candidates, location, false);
+        selected.push(server);
+        candidates = candidates.filter((s) => s.ip !== server.ip);
+      }
+    };
+    // Prefer online candidates, but fallback to anything if not online.
+    pick(online);
+    pick(offline);
+    return selected.map((s) => answers[type](byIpv4[s.ip][family]));
   } catch (e) {
     // Return all servers if anything goes wrong
-    return everything();
+    return available.map((s) => answers[type](s[family]));
   }
 }
 `,
