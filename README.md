@@ -61,6 +61,14 @@ To get the resources from Pulumi, one can use:
 $ cat .pulumi/stacks/dev.json | jq -r '.checkpoint.latest.resources[] | (.urn + " → " + .id)' | grep rdns
 ```
 
+### Tests
+
+Unit tests are in `__tests__/`.
+
+```console
+$ npm test
+```
+
 ### npm (for JavaScript dependencies)
 
 ```console

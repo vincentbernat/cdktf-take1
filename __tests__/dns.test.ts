@@ -1,0 +1,217 @@
+import { Testing } from "cdktn";
+import "cdktn/lib/testing/adapters/jest";
+import * as vm from "vm";
+import { AwsProvider } from "../.gen/providers/aws/provider";
+import { GandiProvider } from "../.gen/providers/gandi/provider";
+import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
+import { DnsRecord } from "../.gen/providers/bunnynet/dns-record";
+import { DnsZone } from "../.gen/providers/bunnynet/dns-zone";
+import * as dns from "../luffy/dns";
+import * as kms from "../luffy/kms";
+import type { ServerArray } from "../luffy/servers";
+
+const server = (
+  id: number,
+  latitude: number,
+  longitude: number
+): ServerArray[number] => ({
+  name: `web0${id}.luffy.cx`,
+  ipv4Address: `192.0.2.${id}`,
+  ipv6Address: `2001:db8::${id}`,
+  hardware: "test",
+  tags: ["web"],
+  geo: { latitude, longitude },
+});
+
+const servers: ServerArray = [
+  server(2, 48.85, 2.35), // Paris
+  server(3, 60.17, 24.94), // Helsinki
+  server(4, 49.45, 11.08), // Nuremberg
+  server(5, 39.04, -77.49), // Ashburn
+  server(6, 41.88, -87.63), // Chicago
+];
+
+const synthesized = Testing.synthScope((scope) => {
+  const aws = new AwsProvider(scope, "aws", { region: "us-east-1" });
+  const gandi = new GandiProvider(scope, "gandi", { key: "test" });
+  const bunny = new BunnynetProvider(scope, "bunny", { apiKey: "test" });
+  new dns.Resources(
+    scope,
+    servers,
+    { aws, gandiVB: gandi, gandiRB: gandi, bunny },
+    new kms.Resources(scope, aws)
+  );
+});
+
+describe("Bunny zone", () => {
+  it("is signed", () => {
+    expect(synthesized).toHaveResourceWithProperties(DnsZone, {
+      domain: "bernat.ch",
+      dnssec_enabled: true,
+    });
+  });
+
+  it("splits MX records and removes the trailing dot", () => {
+    expect(synthesized).toHaveResourceWithProperties(DnsRecord, {
+      type: "MX",
+      name: "",
+      priority: 10,
+      value: "in1-smtp.messagingengine.com",
+    });
+  });
+
+  it("splits CAA records", () => {
+    expect(synthesized).toHaveResourceWithProperties(DnsRecord, {
+      type: "CAA",
+      name: "",
+      flags: 0,
+      tag: "issue",
+      value: "letsencrypt.org",
+    });
+  });
+
+  it("splits SRV records and removes the trailing dot", () => {
+    expect(synthesized).toHaveResourceWithProperties(DnsRecord, {
+      type: "SRV",
+      name: "_imaps._tcp",
+      priority: 0,
+      weight: 1,
+      port: 993,
+      value: "imap.fastmail.com",
+    });
+  });
+
+  it("keeps null SRV targets", () => {
+    expect(synthesized).toHaveResourceWithProperties(DnsRecord, {
+      type: "SRV",
+      name: "_imap._tcp",
+      value: ".",
+    });
+  });
+
+  it.each(["", "vincent", "media"])("uses a script for %p", (name) => {
+    expect(synthesized).toHaveResourceWithProperties(DnsRecord, {
+      type: "Script",
+      name,
+    });
+  });
+});
+
+describe("Bunny geo script", () => {
+  const scripts = Object.values<{ content: string }>(
+    JSON.parse(synthesized).resource.bunnynet_dns_script
+  );
+  const paris = { latitude: 48.8, longitude: 2.3 };
+  const newYork = { latitude: 40.7, longitude: -74 };
+  let down: string[];
+  let runtime: Record<string, any>;
+
+  // Mock of the Scriptable DNS runtime. Like Bunny, monitoring and routing
+  // do not accept IPv6 addresses.
+  const ipv4Only = (ip: string) => {
+    if (ip.includes(":")) throw new Error("Operation not supported");
+  };
+  beforeEach(() => {
+    down = [];
+    runtime = {
+      Server: class {
+        constructor(
+          public ip: string,
+          public latitude: number,
+          public longitude: number
+        ) {}
+      },
+      ARecord: class {
+        type = "A";
+        constructor(public ip: string, public ttl: number) {}
+      },
+      AaaaRecord: class {
+        type = "AAAA";
+        constructor(public ip: string, public ttl: number) {}
+      },
+      Monitoring: {
+        getStatus: (ip: string) => {
+          ipv4Only(ip);
+          return { isOnline: !down.includes(ip), latency: 1 };
+        },
+      },
+      RoutingEngine: {
+        getClosestServer: (
+          list: { ip: string; latitude: number; longitude: number }[],
+          location: { latitude: number; longitude: number }
+        ) => {
+          list.forEach((s) => ipv4Only(s.ip));
+          const distance = (s: { latitude: number; longitude: number }) =>
+            Math.hypot(
+              s.latitude - location.latitude,
+              s.longitude - location.longitude
+            );
+          return [...list].sort((a, b) => distance(a) - distance(b))[0];
+        },
+      },
+    };
+  });
+
+  const query = (queryType: string, geoLocation = paris) => {
+    const code = scripts[0].content.replace(
+      "export default function",
+      "function"
+    );
+    const handleQuery = vm.runInNewContext(`${code}\nhandleQuery;`, {
+      ...runtime,
+    });
+    return handleQuery({ request: { queryType, geoLocation } }).map(
+      (answer: { type: string; ip: string }) => `${answer.type} ${answer.ip}`
+    );
+  };
+
+  it("is shared by all names", () => {
+    expect(scripts).toHaveLength(1);
+  });
+
+  it("returns the two closest servers", () => {
+    expect(query("A")).toEqual(["A 192.0.2.2", "A 192.0.2.4"]);
+    expect(query("AAAA", newYork)).toEqual([
+      "AAAA 2001:db8::5",
+      "AAAA 2001:db8::6",
+    ]);
+  });
+
+  it("uses the TTL of web records", () => {
+    const code = scripts[0].content;
+    expect(code).toContain("new ARecord(ip, 3600)");
+  });
+
+  it("accepts any case for the query type", () => {
+    expect(query("aaaa")).toEqual(["AAAA 2001:db8::2", "AAAA 2001:db8::4"]);
+  });
+
+  it("does not answer other query types", () => {
+    expect(query("MX")).toEqual([]);
+    expect(query("TXT")).toEqual([]);
+  });
+
+  it("skips servers that are down", () => {
+    down = ["192.0.2.4"];
+    expect(query("AAAA")).toEqual(["AAAA 2001:db8::2", "AAAA 2001:db8::3"]);
+  });
+
+  it("completes with the closest servers that are down", () => {
+    down = ["192.0.2.3", "192.0.2.4", "192.0.2.5", "192.0.2.6"];
+    expect(query("A")).toEqual(["A 192.0.2.2", "A 192.0.2.4"]);
+    down = servers.map((s) => s.ipv4Address!);
+    expect(query("A")).toEqual(["A 192.0.2.2", "A 192.0.2.4"]);
+  });
+
+  it("returns all servers when monitoring fails", () => {
+    runtime.Monitoring.getStatus = () => {
+      throw new Error("monitoring is broken");
+    };
+    expect(query("A")).toHaveLength(servers.length);
+  });
+
+  it("returns all servers when routing fails", () => {
+    runtime.RoutingEngine.getClosestServer = () => null;
+    expect(query("AAAA")).toHaveLength(servers.length);
+  });
+});

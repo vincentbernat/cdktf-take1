@@ -4,13 +4,19 @@
   "main": "main.js",
   "types": "main.ts",
   "private": true,
+  "scripts": {
+    "test": "jest"
+  },
   "dependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.20.1",
     "cdktn": "^0.24.0",
     "cdktn-cli": "^0.24.0",
     "constructs": "10.6.0",
     "eslint": "^8.27.0",
+    "jest": "^30.5.2",
     "prettier": "^2.7.1",
+    "ts-jest": "^29.4.14",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "typescript-language-server": "^2.1.0"
