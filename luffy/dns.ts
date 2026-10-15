@@ -6,7 +6,16 @@ import { AwsProvider } from "../.gen/providers/aws/provider";
 import { GandiProvider } from "../.gen/providers/gandi/provider";
 import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
 import * as gandi from "../.gen/providers/gandi";
-import * as aws from "../.gen/providers/aws";
+import { IamUser } from "../.gen/providers/aws/iam-user";
+import { IamUserPolicy } from "../.gen/providers/aws/iam-user-policy";
+import { KmsAlias } from "../.gen/providers/aws/kms-alias";
+import { Route53HostedZoneDnssec } from "../.gen/providers/aws/route53-hosted-zone-dnssec";
+import { Route53KeySigningKey } from "../.gen/providers/aws/route53-key-signing-key";
+import {
+  Route53Record,
+  Route53RecordConfig,
+} from "../.gen/providers/aws/route53-record";
+import { Route53Zone as AwsRoute53Zone } from "../.gen/providers/aws/route53-zone";
 import * as bunnynet from "../.gen/providers/bunnynet";
 
 const RRTypes = [
@@ -41,10 +50,7 @@ type GandiRecordOptions = Partial<CommonRecordOptions>;
 type BunnyRecordOptions = Partial<CommonRecordOptions>;
 type Route53RecordOptions = Partial<
   CommonRecordOptions &
-    Pick<
-      aws.route53Record.Route53RecordConfig,
-      "setIdentifier" | "geolocationRoutingPolicy"
-    >
+    Pick<Route53RecordConfig, "setIdentifier" | "geolocationRoutingPolicy">
 >;
 
 /**
@@ -309,14 +315,14 @@ class GandiZone extends Zone {
 }
 
 class Route53Zone extends Zone {
-  public readonly zone: aws.route53Zone.Route53Zone;
+  public readonly zone: AwsRoute53Zone;
   constructor(
     scope: Construct,
     name: string,
     private readonly provider: AwsProvider
   ) {
     super(scope, `R53-${name}`, name);
-    this.zone = new aws.route53Zone.Route53Zone(this, "zone", {
+    this.zone = new AwsRoute53Zone(this, "zone", {
       name: name,
       provider: this.provider,
     });
@@ -335,7 +341,7 @@ class Route53Zone extends Zone {
     };
     if (!Array.isArray(records)) records = [records];
     const rname = name === "@" ? this.name : `${name}.${this.name}`;
-    new aws.route53Record.Route53Record(
+    new Route53Record(
       this,
       options?.setIdentifier
         ? `${rrtype}-${options.setIdentifier}-${name}`
@@ -386,15 +392,15 @@ class Route53Zone extends Zone {
     return this;
   }
 
-  sign(dnsCMK: aws.kmsAlias.KmsAlias) {
-    const ksk = new aws.route53KeySigningKey.Route53KeySigningKey(this, `KSK`, {
+  sign(dnsCMK: KmsAlias) {
+    const ksk = new Route53KeySigningKey(this, `KSK`, {
       hostedZoneId: this.zone.zoneId,
       keyManagementServiceArn: dnsCMK.targetKeyArn,
       name: this.name.replace(/[^0-9a-zA-Z]/g, ""),
       status: "ACTIVE",
       provider: this.provider,
     });
-    new aws.route53HostedZoneDnssec.Route53HostedZoneDnssec(this, `DNSSEC`, {
+    new Route53HostedZoneDnssec(this, `DNSSEC`, {
       hostedZoneId: this.zone.zoneId,
       signingStatus: "SIGNING",
       provider: this.provider,
@@ -413,11 +419,11 @@ class Route53Zone extends Zone {
   }
 
   allowUser(username: string) {
-    const user = new aws.iamUser.IamUser(this, `IAM-${username}`, {
+    const user = new IamUser(this, `IAM-${username}`, {
       name: username,
       path: "/",
     });
-    new aws.iamUserPolicy.IamUserPolicy(this, `IAM-${username}-policy`, {
+    new IamUserPolicy(this, `IAM-${username}-policy`, {
       name: `AmazonRoute53-${this.name}-FullAccess`,
       policy: Fn.jsonencode({
         Version: "2012-10-17",
@@ -626,7 +632,7 @@ export class Resources extends Construct {
     super(scope, "luffy-dns");
 
     /* Create an alias for DNS CMK. */
-    const dnsCMK = new aws.kmsAlias.KmsAlias(this, "dns-cmk", {
+    const dnsCMK = new KmsAlias(this, "dns-cmk", {
       name: "alias/dns-cmk",
       targetKeyId: awsKMS.key.keyId,
       provider: providers.aws,

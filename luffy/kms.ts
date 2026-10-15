@@ -1,19 +1,18 @@
 import { Fn } from "cdktn";
 import { Construct } from "constructs";
 import { AwsProvider } from "../.gen/providers/aws/provider";
-import * as aws from "../.gen/providers/aws";
+import { DataAwsCallerIdentity } from "../.gen/providers/aws/data-aws-caller-identity";
+import { KmsKey } from "../.gen/providers/aws/kms-key";
 
 /** KMS resource for Amazon AWS */
 export class Resources extends Construct {
-  public readonly key: aws.kmsKey.KmsKey;
+  public readonly key: KmsKey;
   constructor(scope: Construct, provider: AwsProvider) {
     super(scope, "luffy-kms");
-    const caller = new aws.dataAwsCallerIdentity.DataAwsCallerIdentity(
-      this,
-      "current",
-      { provider: provider }
-    );
-    this.key = new aws.kmsKey.KmsKey(this, "kms-key", {
+    const caller = new DataAwsCallerIdentity(this, "current", {
+      provider: provider,
+    });
+    this.key = new KmsKey(this, "kms-key", {
       customerMasterKeySpec: "ECC_NIST_P256",
       enableKeyRotation: false,
       isEnabled: true,
