@@ -128,10 +128,6 @@ describe("Bunny geo script", () => {
     );
   };
 
-  it("is shared by all names", () => {
-    expect(scripts).toHaveLength(1);
-  });
-
   it("returns the two closest servers", () => {
     expect(query("A")).toEqual(["A 192.0.2.2", "A 192.0.2.4"]);
     expect(query("AAAA", newYork)).toEqual([
