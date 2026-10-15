@@ -520,26 +520,19 @@ class BunnyZone extends Zone {
     const ttl = options?.ttl ?? defaultTTL;
     const key = servers.map((server) => server.name.split(".")[0]).join("-");
     if (!(key in this.scripts)) {
-      const serverList = (rrtype: "A" | "AAAA") =>
-        servers
-          .map((server) => {
-            const ip = rrtype === "A" ? server.ipv4Address : server.ipv6Address;
-            if (!ip) return null;
-            const { latitude, longitude } = server.geo;
-            return `new Server("${ip}", ${latitude}, ${longitude}, 100)`;
-          })
-          .filter((s): s is string => !!s)
-          .join(", ");
+      const serverList = servers.map((server) => ({
+        ipv4: server.ipv4Address,
+        ipv6: server.ipv6Address,
+        ...server.geo,
+      }));
       this.scripts[key] = new bunnynet.dnsScript.DnsScript(
         this,
         `script-${key}`,
         {
           name: `${this.name}-${key}`,
           content: `
-var servers = {
-  A: [${serverList("A")}],
-  AAAA: [${serverList("AAAA")}],
-};
+var servers = ${JSON.stringify(serverList, null, 2)};
+var families = { A: "ipv4", AAAA: "ipv6" };
 var answers = {
   A: function (ip) { return new ARecord(ip, ${ttl}); },
   AAAA: function (ip) { return new AaaaRecord(ip, ${ttl}); },
@@ -547,21 +540,38 @@ var answers = {
 
 export default function handleQuery(query) {
   var type = String(query.request.queryType).toUpperCase();
-  if (!servers[type] || servers[type].length === 0) return [];
-  var location = query.request.geoLocation;
-  var candidates = servers[type];
-  var selected = [];
-  while (selected.length < 2) {
-    var server = RoutingEngine.getClosestServer(candidates, location, true);
-    if (!server) break;
-    selected.push(server);
-    candidates = candidates.filter(function (s) { return s.ip !== server.ip; });
+  var family = families[type];
+  if (!family) return [];
+  var available = servers.filter(function (s) { return s[family]; });
+  if (available.length === 0) return [];
+  try {
+    var all = [];
+    var online = [];
+    available.forEach(function (s) {
+      var server = new Server(s[family], s.latitude, s.longitude, 100);
+      all.push(server);
+      // Monitoring does not support IPv6, use IPv4 for both families
+      if (!s.ipv4 || Monitoring.getStatus(s.ipv4).isOnline) online.push(server);
+    });
+    var location = query.request.geoLocation;
+    var selected = [];
+    while (selected.length < 2 && online.length > 0) {
+      var server = RoutingEngine.getClosestServer(online, location, false);
+      selected.push(server);
+      online = online.filter(function (s) { return s.ip !== server.ip; });
+    }
+    // All servers are down
+    if (selected.length === 0) selected = all;
+    else if (selected.length === 1) {
+      var others = all.filter(function (s) { return s.ip !== selected[0].ip; });
+      if (others.length > 0)
+        selected.push(RoutingEngine.getClosestServer(others, location, false));
+    }
+    return selected.map(function (s) { return answers[type](s.ip); });
+  } catch (e) {
+    // Return all servers if anything goes wrong
+    return available.map(function (s) { return answers[type](s[family]); });
   }
-  // All servers are down
-  if (selected.length === 0) selected = servers[type];
-  else if (selected.length === 1 && candidates.length > 0)
-    selected.push(RoutingEngine.getClosestServer(candidates, location, false));
-  return selected.map(function (s) { return answers[type](s.ip); });
 }
 `,
           provider: this.provider,
