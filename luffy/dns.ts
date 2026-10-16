@@ -125,7 +125,11 @@ abstract class BasicZone extends Construct {
       );
 
     // To send emails
-    this.TXT("@", "v=spf1 include:spf.messagingengine.com -all");
+    (subdomains ?? [])
+      .concat(["@"])
+      .forEach((d) =>
+        this.TXT(d, "v=spf1 include:spf.messagingengine.com -all")
+      );
     ["mesmtp", "fm1", "fm2", "fm3"].forEach((dk) =>
       this.CNAME(`${dk}._domainkey`, `${dk}.${this.name}.dkim.fmhosted.com.`)
     );
