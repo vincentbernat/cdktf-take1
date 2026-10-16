@@ -756,9 +756,15 @@ export class Resources extends Construct {
         })
       )
       .NS("y", Token.asList(Fn.formatlist("%s.", [yLuffyCX.nameservers])))
-      .record("y", "DS", [yLuffyCX.ksk!.dsRecord])
+      .record("y", "DS", [
+        yLuffyCX.ksk!.dsRecord,
+        "52941 13 2 3CBA38598E16FF9B4F7BA73D783C0F8250A0F4CABD64D8F467838732F8D8988E",
+      ])
       .NS("acme", Token.asList(Fn.formatlist("%s.", [acmeLuffyCX.nameservers])))
-      .record("acme", "DS", [acmeLuffyCX.ksk!.dsRecord]);
+      .record("acme", "DS", [
+        acmeLuffyCX.ksk!.dsRecord,
+        "55628 13 2 4946E7508F20E15F1B577A231104B029A1A82E04699A80CD46ADCE31227EE81F",
+      ]);
 
     new TerraformOutput(this, "acme-zone", {
       value: acmeLuffyCX.zone.zoneId,
