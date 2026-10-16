@@ -740,22 +740,20 @@ export class Resources extends Construct {
       .www("*.pages", servers)
       .www(
         "*.ssh",
-        servers.filter((server) => server.tags.includes("http-over-ssh"), {})
+        servers.filter((server) => server.tags.includes("http-over-ssh"))
       )
       .servers(servers)
       .CNAME("eizo", "eizo.y.luffy.cx.")
       .CNAME("nsupdate", `${dnsServers[0].name}.`)
       .A_AAAA(
         "comments",
-        servers.filter((server) => server.tags.includes("isso"), {
-          ttl: 60 * 60 * 2,
-        })
+        servers.filter((server) => server.tags.includes("isso")),
+        { ttl: 60 * 60 * 2 }
       )
       .A_AAAA(
         "goatcounter",
-        servers.filter((server) => server.tags.includes("goatcounter"), {
-          ttl: 60 * 60 * 2,
-        })
+        servers.filter((server) => server.tags.includes("goatcounter")),
+        { ttl: 60 * 60 * 2 }
       )
       .NS(
         "y",
