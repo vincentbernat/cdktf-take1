@@ -728,6 +728,7 @@ export class Resources extends Construct {
       .allowUser("ACME");
 
     // luffy.cx, on Gandi
+    const dnsServers = servers.filter((server) => server.tags.includes("dns"));
     new GandiZone(this, "luffy.cx", providers.gandiVB)
       .sign()
       .registrar(providers.gandiVB)
@@ -743,6 +744,7 @@ export class Resources extends Construct {
       )
       .servers(servers)
       .CNAME("eizo", "eizo.y.luffy.cx.")
+      .CNAME("nsupdate", `${dnsServers[0].name}.`)
       .A_AAAA(
         "comments",
         servers.filter((server) => server.tags.includes("isso"), {
@@ -755,7 +757,10 @@ export class Resources extends Construct {
           ttl: 60 * 60 * 2,
         })
       )
-      .NS("y", Token.asList(Fn.formatlist("%s.", [yLuffyCX.nameservers])))
+      .NS(
+        "y",
+        dnsServers.map((server) => `${server.name}.`)
+      )
       .record("y", "DS", [
         yLuffyCX.ksk!.dsRecord,
         "52941 13 2 3CBA38598E16FF9B4F7BA73D783C0F8250A0F4CABD64D8F467838732F8D8988E",

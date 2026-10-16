@@ -9,20 +9,21 @@ import type { ServerArray } from "../luffy/servers";
 const server = (
   id: number,
   latitude: number,
-  longitude: number
+  longitude: number,
+  tags: string[] = []
 ): ServerArray[number] => ({
   name: `web0${id}.luffy.cx`,
   ipv4Address: `192.0.2.${id}`,
   ipv6Address: `2001:db8::${id}`,
   hardware: "test",
-  tags: ["web"],
+  tags: ["web", ...tags],
   geo: { latitude, longitude },
 });
 
 export const servers: ServerArray = [
   server(2, 48.85, 2.35), // Paris
   server(3, 60.17, 24.94), // Helsinki
-  server(4, 49.45, 11.08), // Nuremberg
+  server(4, 49.45, 11.08, ["dns"]), // Nuremberg
   server(5, 39.04, -77.49), // Ashburn
   server(6, 41.88, -87.63), // Chicago
 ];
