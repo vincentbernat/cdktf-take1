@@ -155,7 +155,7 @@ export class Resources extends Construct {
           serverType: "cpx11",
           location: "nbg1",
         }),
-        tags: ["web", "continent:EU", "continent:AF"],
+        tags: ["web", "dns", "continent:EU", "continent:AF"],
         geo: { latitude: 49.45, longitude: 11.08 },
       },
       {
