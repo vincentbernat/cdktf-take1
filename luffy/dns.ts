@@ -249,16 +249,20 @@ abstract class Zone extends BasicZone {
         provider: provider,
       }
     );
-    if (dnssec) {
-      if (!this.ksk) throw new Error(`${this.name} was not signed`);
-      new gandi.dnssecKey.DnssecKey(this, "NSSEC", {
-        domain: this.name,
-        algorithm: this.ksk.algorithm,
-        publicKey: this.ksk.publicKey,
-        type: "ksk",
-        provider: provider,
-      });
-    }
+    if (dnssec) this.registrarKey(provider);
+    return this;
+  }
+
+  /** Publish the KSK of the zone to Gandi. */
+  registrarKey(provider: GandiProvider) {
+    if (!this.ksk) throw new Error(`${this.name} was not signed`);
+    new gandi.dnssecKey.DnssecKey(this, "NSSEC", {
+      domain: this.name,
+      algorithm: this.ksk.algorithm,
+      publicKey: this.ksk.publicKey,
+      type: "ksk",
+      provider: provider,
+    });
     return this;
   }
 }
@@ -681,10 +685,16 @@ export class Resources extends Construct {
         "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWsJlP6+qLJS/RLvoNrMPRPrfzcQAuvZ1vUIJkqGauJ23zowQ9ni44XqzYyiBPx00c0QCQhO7oBEhnTeVGMcIfzNASeofZDfiu2dk7iOARpBeKT+EPJtXKS8cW0nz6cusANW7Mxa1Or1sUeV5+J0jFSAmeqWjginJPHJri7ZDA6QIDAQAB"
       );
 
-    // vincentbernat.com (on Gandi)
-    new GandiZone(this, "vincentbernat.com", providers.gandiVB)
-      .sign()
-      .registrar(providers.gandiVB)
+    // vincentbernat.com, on Bunny, backup on Gandi
+    MultiZone(
+      // Keep the Gandi KSK until the old NS records expire
+      new GandiZone(this, "vincentbernat.com", providers.gandiVB)
+        .sign()
+        .registrarKey(providers.gandiVB),
+      new BunnyZone(this, "vincentbernat.com", providers.bunny)
+        .sign()
+        .registrar(providers.gandiVB)
+    )
       .www("@", servers)
       .www("www", servers)
       .fastmailMX();
