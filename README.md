@@ -103,12 +103,13 @@ $ nix flake update nixpkgs
 - [x] Switch the DDNS clients to TSIG updates
 - [x] Delegate `acme.luffy.cx` to web04
 - [x] Switch ACME DNS-01 challenges to `dnsupdate`
-- [ ] After 2026-10-18, remove the Route53 DS for `y` and `acme`, the Route53
-      zones, the `DDNS` and `ACME` IAM users and the `acme-zone` output
+- [ ] After 2026-10-18 20:00 UTC (Route53 NS TTL), remove the Route53 DS for
+      `y` and `acme`, the Route53 zones, the `DDNS` and `ACME` IAM users and
+      the `acme-zone` output
 - [x] Switch `vincentbernat.com` to Bunny as a test, with the Gandi KSK
       (16320) next to the Bunny one (33331)
-- [ ] After 2026-10-18 (`.com` NS TTL), remove `.registrarKey()` on the Gandi
-      zone for `vincentbernat.com`
+- [ ] After 2026-10-18 21:00 UTC (`.com` NS TTL), remove `.registrarKey()` on
+      the Gandi zone for `vincentbernat.com`
 - [ ] Switch `bernat.ch` to Bunny:
   - [x] Report to Bunny the denial of existence for script records: on names
         other than the apex, the NSEC record includes CNAME, so validating
@@ -121,8 +122,8 @@ $ nix flake update nixpkgs
         domain is unsigned until the last step.
   - [x] Switch nameservers to Bunny at Gandi: move
         `.registrar(providers.gandiVB, false)` to the Bunny zone
-  - [ ] After 2026-10-19 (Route53 NS TTL), sign the Bunny zone and publish its
-        KSK with `.sign().registrar(providers.gandiVB)`.
+  - [ ] After 2026-10-19 8:40 UTC (Route53 NS TTL), sign the Bunny zone and
+        publish its KSK with `.sign().registrar(providers.gandiVB)`.
 - [ ] Remove the CloudFront distributions
 - [ ] Remove the Route53 zones for `bernat.ch` and `bernat.im`
 - [ ] Remove the AWS provider, with the KMS key and alias used to sign the
