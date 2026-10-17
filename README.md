@@ -110,11 +110,11 @@ $ nix flake update nixpkgs
 - [ ] After 2026-10-18 (`.com` NS TTL), remove `.registrarKey()` on the Gandi
       zone for `vincentbernat.com`
 - [ ] Switch `bernat.ch` to Bunny:
-  - [ ] Report to Bunny the denial of existence for script records: on names
+  - [x] Report to Bunny the denial of existence for script records: on names
         other than the apex, the NSEC record includes CNAME, so validating
         resolvers reject NODATA answers (`HTTPS` and `TXT` queries fail).
         Example: `dig HTTPS www.vincentbernat.com @1.1.1.1` returns SERVFAIL.
-        Or add an HTTPS record, I think that's the only thing that matters.
+        In the meantime, I've added an explicit HTTPS record.
   - [ ] Remove the DS at Gandi with `.registrar(providers.gandiVB, false)` on
         the Route53 zone and stop signing the Bunny zone (remove `.sign()`, so
         it does not publish CDS records), wait 1 hour (DS TTL in `.ch`). The
@@ -127,3 +127,7 @@ $ nix flake update nixpkgs
 - [ ] Remove the Route53 zones for `bernat.ch` and `bernat.im`
 - [ ] Remove the AWS provider, with the KMS key and alias used to sign the
       Route53 zones (AWS deletes a KMS key after 7 to 30 days)
+- [ ] Serve the Bunny CDN as `media-cdn.bernat.ch`: add it as a hostname of
+      the pull zone (with TLS), use a CNAME to `media-bernat-ch.b-cdn.net`
+      while `bernat.ch` is on Route53, then a `PullZone` record once it is on
+      Bunny (answered directly, no CNAME to follow).
