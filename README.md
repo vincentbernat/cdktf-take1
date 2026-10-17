@@ -119,10 +119,10 @@ $ nix flake update nixpkgs
         the Route53 zone and stop signing the Bunny zone (remove `.sign()`, so
         it does not publish CDS records), wait 1 hour (DS TTL in `.ch`). The
         domain is unsigned until the last step.
-  - [ ] Switch nameservers to Bunny at Gandi: move
+  - [x] Switch nameservers to Bunny at Gandi: move
         `.registrar(providers.gandiVB, false)` to the Bunny zone
-  - [ ] After 2 days (Route53 NS TTL), sign the Bunny zone and publish its KSK
-        with `.sign().registrar(providers.gandiVB)`.
+  - [ ] After 2026-10-19 (Route53 NS TTL), sign the Bunny zone and publish its
+        KSK with `.sign().registrar(providers.gandiVB)`.
 - [ ] Remove the CloudFront distributions
 - [ ] Remove the Route53 zones for `bernat.ch` and `bernat.im`
 - [ ] Remove the AWS provider, with the KMS key and alias used to sign the
