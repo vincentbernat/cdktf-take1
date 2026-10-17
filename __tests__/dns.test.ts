@@ -58,6 +58,15 @@ describe("Bunny zone", () => {
       name,
     });
   });
+
+  it.each(["", "vincent", "media"])("has an HTTPS record for %p", (name) => {
+    expect(synthesized).toHaveResourceWithProperties(DnsRecord, {
+      type: "HTTPS",
+      name,
+      priority: 1,
+      value: '. alpn="h2"',
+    });
+  });
 });
 
 describe("Bunny geo script", () => {

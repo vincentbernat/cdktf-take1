@@ -71,6 +71,11 @@ const bunny = (domain: string) => {
       case "SRV":
         value = `${r.priority} ${r.weight} ${r.port} ${host(r.value)}`;
         break;
+      case "HTTPS": {
+        const [target, ...params] = r.value.split(" ");
+        value = [r.priority, host(target), ...params].join(" ");
+        break;
+      }
       case "CAA":
         value = `${r.flags} ${r.tag} "${r.value}"`;
         break;
@@ -103,6 +108,12 @@ const scriptServers = (id: string) => {
 const without = (zone: Zone, keys: string[]) =>
   Object.fromEntries(Object.entries(zone).filter(([k]) => !keys.includes(k)));
 
+/** Gandi does not get HTTPS records. */
+const withoutHttps = (zone: Zone) =>
+  Object.fromEntries(
+    Object.entries(zone).filter(([k]) => !k.endsWith(" HTTPS"))
+  );
+
 const domains = (type: string, attribute: string) =>
   records(type)
     .map((r) => r[attribute])
@@ -115,7 +126,7 @@ describe.each(domains("aws_route53_zone", "name"))(
     const { zone, geo } = route53(domain);
 
     it("has the same records as Gandi", () => {
-      expect(zone).toEqual(without(reference, Object.keys(geo)));
+      expect(withoutHttps(zone)).toEqual(without(reference, Object.keys(geo)));
     });
 
     it.each(Object.keys(geo))(
@@ -142,7 +153,7 @@ describe.each(domains("bunnynet_dns_zone", "domain"))(
     ]);
 
     it("has the same records as Gandi", () => {
-      expect(zone).toEqual(without(reference, geoKeys));
+      expect(withoutHttps(zone)).toEqual(without(reference, geoKeys));
     });
 
     it.each(Object.keys(scripted))(

@@ -24,6 +24,7 @@ const RRTypes = [
   "CAA",
   "CNAME",
   "DS",
+  "HTTPS",
   "MX",
   "NS",
   "SRV",
@@ -157,7 +158,11 @@ abstract class BasicZone extends Construct {
     servers = servers.filter(
       (server) => !server.disabled && server.tags.includes("web")
     );
-    this.www_A_AAAA(name, servers, { ...options, ttl: 60 * 60 });
+    const web = (name: string) => {
+      this.www_A_AAAA(name, servers, { ...options, ttl: 60 * 60 });
+      this.record(name, "HTTPS", '1 . alpn="h2"', { ...options, ttl: 60 * 60 });
+    };
+    web(name);
     if (name === "@") {
       this.record(name, "CAA", [
         '0 issue "letsencrypt.org"',
@@ -166,7 +171,7 @@ abstract class BasicZone extends Construct {
       this.CNAME("_acme-challenge", `${this.name}.acme.luffy.cx.`);
     } else if (name.startsWith("*.")) {
       name = name.slice(2);
-      this.www_A_AAAA(name, servers, { ...options, ttl: 60 * 60 });
+      web(name);
       this.record(name, "CAA", [
         '0 issue "letsencrypt.org"',
         '0 issuewild "letsencrypt.org"',
@@ -286,6 +291,8 @@ class GandiZone extends Zone {
     records: Records,
     options?: GandiRecordOptions
   ) {
+    // Gandi does not accept "." as target
+    if (rrtype === "HTTPS") return this;
     let providerOptions = {
       ttl: defaultTTL,
       ...options,
@@ -505,6 +512,14 @@ class BunnyZone extends Zone {
             weight: Number(weight),
             port: Number(port),
             value: fqdn(value),
+          };
+          break;
+        }
+        case "HTTPS": {
+          const [priority, target, ...params] = record.split(" ");
+          fields = {
+            priority: Number(priority),
+            value: [fqdn(target), ...params].join(" "),
           };
           break;
         }
