@@ -731,13 +731,14 @@ export class Resources extends Construct {
       .www("vincent", servers)
       .fastmailMX();
 
-    // bernat.ch, on Route 53, backup on Gandi and Bunny
+    // bernat.ch, on Route 53, backup on Gandi and Bunny. Unsigned while
+    // moving to Bunny.
     MultiZone(
       new Route53Zone(this, "bernat.ch", providers.aws)
         .sign(dnsCMK)
-        .registrar(providers.gandiVB),
+        .registrar(providers.gandiVB, false),
       new GandiZone(this, "bernat.ch", providers.gandiVB).sign(),
-      new BunnyZone(this, "bernat.ch", providers.bunny).sign()
+      new BunnyZone(this, "bernat.ch", providers.bunny)
     )
       .www("@", servers)
       .www("vincent", servers)

@@ -9,7 +9,7 @@ const synthesized = synthesizeDns();
 describe("Bunny zone", () => {
   it("is signed", () => {
     expect(synthesized).toHaveResourceWithProperties(DnsZone, {
-      domain: "bernat.ch",
+      domain: "vincentbernat.com",
       dnssec_enabled: true,
     });
   });

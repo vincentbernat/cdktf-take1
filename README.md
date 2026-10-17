@@ -115,7 +115,7 @@ $ nix flake update nixpkgs
         resolvers reject NODATA answers (`HTTPS` and `TXT` queries fail).
         Example: `dig HTTPS www.vincentbernat.com @1.1.1.1` returns SERVFAIL.
         In the meantime, I've added an explicit HTTPS record.
-  - [ ] Remove the DS at Gandi with `.registrar(providers.gandiVB, false)` on
+  - [x] Remove the DS at Gandi with `.registrar(providers.gandiVB, false)` on
         the Route53 zone and stop signing the Bunny zone (remove `.sign()`, so
         it does not publish CDS records), wait 1 hour (DS TTL in `.ch`). The
         domain is unsigned until the last step.
