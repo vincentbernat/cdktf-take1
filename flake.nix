@@ -93,6 +93,18 @@
             cdktn synth
             npm test
 
+            # Credentials
+            for p in \
+              njf.nznmba.pbz/Nqzvavfgengbe \
+              urgmare.pbz/ivaprag@oreang.pu \
+              ihyge.pbz/ihyge@ivaprag.oreang.pu; do
+                eval "$(pass show "personal/$(echo "$p" | tr 'A-Za-z' 'N-ZA-Mn-za-m')" | grep '^export')"
+            done
+            eval "$(pass show personal/cdktf/secrets | grep '^export')"
+            export TF_VAR_hcloudToken="$HCLOUD_TOKEN"
+            export TF_VAR_vultrApiKey="$VULTR_API_KEY"
+            unset VULTR_API_KEY HCLOUD_TOKEN
+
             cd cdktf.out/stacks/cdktf-take1
             rm -f .terraform.lock.hcl
             tofu init
@@ -149,20 +161,6 @@
             export PATH=$PWD/node_modules/.bin:$PATH
             ln -nsf ${nodeEnv}/node_modules node_modules
             ln -nsf ${cdktfProviders} .gen
-
-            # Credentials
-            [ "$TERM" = dumb ] || {
-              for p in \
-                njf.nznmba.pbz/Nqzvavfgengbe \
-                urgmare.pbz/ivaprag@oreang.pu \
-                ihyge.pbz/ihyge@ivaprag.oreang.pu; do
-                  eval $(pass show personal/$(echo $p | tr 'A-Za-z' 'N-ZA-Mn-za-m') | grep '^export')
-              done
-              eval $(pass show personal/cdktf/secrets | grep '^export')
-              export TF_VAR_hcloudToken="$HCLOUD_TOKEN"
-              export TF_VAR_vultrApiKey="$VULTR_API_KEY"
-              unset VULTR_API_KEY HCLOUD_TOKEN
-            }
           '';
         };
       });
