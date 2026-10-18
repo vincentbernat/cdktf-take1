@@ -706,10 +706,7 @@ export class Resources extends Construct {
 
     // vincentbernat.com, on Bunny, backup on Gandi
     MultiZone(
-      // Keep the Gandi KSK until the old NS records expire
-      new GandiZone(this, "vincentbernat.com", providers.gandiVB)
-        .sign()
-        .registrarKey(providers.gandiVB),
+      new GandiZone(this, "vincentbernat.com", providers.gandiVB).sign(),
       new BunnyZone(this, "vincentbernat.com", providers.bunny)
         .sign()
         .registrar(providers.gandiVB)

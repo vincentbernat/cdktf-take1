@@ -108,7 +108,7 @@ $ nix flake update nixpkgs
       the `acme-zone` output
 - [x] Switch `vincentbernat.com` to Bunny as a test, with the Gandi KSK
       (16320) next to the Bunny one (33331)
-- [ ] After 2026-10-18 21:00 UTC (`.com` NS TTL), remove `.registrarKey()` on
+- [x] After 2026-10-18 21:00 UTC (`.com` NS TTL), remove `.registrarKey()` on
       the Gandi zone for `vincentbernat.com`
 - [ ] Switch `bernat.ch` to Bunny:
   - [x] Report to Bunny the denial of existence for script records: on names
