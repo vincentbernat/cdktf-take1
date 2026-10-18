@@ -140,7 +140,7 @@ export class Resources extends Construct {
           "gateway4:100.100.100.1",
           "gateway6:fe80::1",
         ],
-        geo: { latitude: 48.85, longitude: 2.35 },
+        geo: { latitude: 48.88, longitude: 2.22 },
       },
       {
         server: new HetznerServer(this, "web03.luffy.cx", providers.hcloud, {
@@ -148,7 +148,7 @@ export class Resources extends Construct {
           location: "hel1",
         }),
         tags: ["web", "isso", "continent:EU"],
-        geo: { latitude: 60.17, longitude: 24.94 },
+        geo: { latitude: 60.34, longitude: 25.03 },
       },
       {
         server: new HetznerServer(this, "web04.luffy.cx", providers.hcloud, {
@@ -156,7 +156,7 @@ export class Resources extends Construct {
           location: "nbg1",
         }),
         tags: ["web", "dns", "continent:EU", "continent:AF"],
-        geo: { latitude: 49.45, longitude: 11.08 },
+        geo: { latitude: 49.45, longitude: 11.01 },
       },
       {
         server: new HetznerServer(this, "web05.luffy.cx", providers.hcloud, {
@@ -165,7 +165,7 @@ export class Resources extends Construct {
           image: "39644359",
         }),
         tags: ["web", "continent:NA", "continent:SA"],
-        geo: { latitude: 39.04, longitude: -77.49 },
+        geo: { latitude: 39.02, longitude: -77.47 },
       },
       {
         server: new VultrServer(this, "web06.luffy.cx", providers.vultr, {
