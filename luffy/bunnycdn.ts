@@ -3,12 +3,21 @@ import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
 import { Pullzone } from "../.gen/providers/bunnynet/pullzone";
 import { PullzoneHostname } from "../.gen/providers/bunnynet/pullzone-hostname";
 
+/** Additional hostname for a pull zone. DNS records are in dns.ts. */
+export type CdnHostname = {
+  name: string;
+  pullzone: Pullzone;
+  hostname: PullzoneHostname;
+};
+
 /* Pull zone for media files. */
 class MediaPullzone extends Construct {
+  public readonly hostnames: CdnHostname[];
   constructor(
     protected scope: Construct,
     protected domain: string,
-    protected provider: BunnynetProvider
+    protected provider: BunnynetProvider,
+    aliases: string[] = []
   ) {
     super(scope, domain);
     const pullzone = new Pullzone(this, domain, {
@@ -44,16 +53,33 @@ class MediaPullzone extends Construct {
       tlsEnabled: true,
       forceSsl: true,
     });
+    // Additional names
+    this.hostnames = aliases.map((name) => ({
+      name,
+      pullzone,
+      hostname: new PullzoneHostname(this, name, {
+        provider,
+        pullzone: pullzone.id,
+        name,
+        tlsEnabled: true,
+        forceSsl: true,
+      }),
+    }));
   }
 }
 
 export class Resources extends Construct {
+  public readonly hostnames: CdnHostname[];
   constructor(
     protected scope: Construct,
     protected provider: BunnynetProvider
   ) {
     super(scope, "luffy-bunnycdn");
-    new MediaPullzone(this, "media.bernat.ch", provider);
-    new MediaPullzone(this, "media.une-oasis-une-ecole.fr", provider);
+    this.hostnames = [
+      new MediaPullzone(this, "media.une-oasis-une-ecole.fr", provider),
+      new MediaPullzone(this, "media.bernat.ch", provider, [
+        "media-cdn.bernat.ch",
+      ]),
+    ].flatMap((pullzone) => pullzone.hostnames);
   }
 }

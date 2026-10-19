@@ -1,6 +1,7 @@
 import { Testing } from "cdktn";
 import { GandiProvider } from "../.gen/providers/gandi/provider";
 import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
+import * as bunnycdn from "../luffy/bunnycdn";
 import * as dns from "../luffy/dns";
 import type { ServerArray } from "../luffy/servers";
 
@@ -31,9 +32,11 @@ export const synthesizeDns = () =>
   Testing.synthScope((scope) => {
     const gandi = new GandiProvider(scope, "gandi", { key: "test" });
     const bunny = new BunnynetProvider(scope, "bunny", { apiKey: "test" });
-    new dns.Resources(scope, servers, {
-      gandiVB: gandi,
-      gandiRB: gandi,
-      bunny,
-    });
+    const cdn = new bunnycdn.Resources(scope, bunny);
+    new dns.Resources(
+      scope,
+      servers,
+      { gandiVB: gandi, gandiRB: gandi, bunny },
+      cdn.hostnames
+    );
   });

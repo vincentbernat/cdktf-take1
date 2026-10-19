@@ -67,6 +67,25 @@ describe("Bunny zone", () => {
       value: '. alpn="h2"',
     });
   });
+
+  it("uses a pull zone record for the CDN", () => {
+    expect(synthesized).toHaveResourceWithProperties(DnsRecord, {
+      type: "PullZone",
+      name: "media-cdn",
+      pullzone_id: expect.stringMatching(/^\$\{bunnynet_pullzone\..*\.id\}$/),
+    });
+  });
+
+  it("adds the CDN hostname after the DNS record", () => {
+    const hostnames = Object.values<any>(
+      JSON.parse(synthesized).resource.bunnynet_pullzone_hostname
+    ).filter((h) => h.name === "media-cdn.bernat.ch");
+    expect(hostnames).toHaveLength(1);
+    expect(hostnames[0]).toMatchObject({ tls_enabled: true, force_ssl: true });
+    expect(hostnames[0].depends_on).toEqual([
+      expect.stringMatching(/^bunnynet_dns_record\..*PullZone-media-cdn/),
+    ]);
+  });
 });
 
 describe("Bunny geo script", () => {
