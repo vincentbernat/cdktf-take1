@@ -103,7 +103,7 @@ $ nix flake update nixpkgs
 - [x] Switch the DDNS clients to TSIG updates
 - [x] Delegate `acme.luffy.cx` to web04
 - [x] Switch ACME DNS-01 challenges to `dnsupdate`
-- [ ] After 2026-10-18 20:00 UTC (Route53 NS TTL), remove the Route53 DS for
+- [x] After 2026-10-18 20:00 UTC (Route53 NS TTL), remove the Route53 DS for
       `y` and `acme`, the Route53 zones, the `DDNS` and `ACME` IAM users and
       the `acme-zone` output
 - [x] Switch `vincentbernat.com` to Bunny as a test, with the Gandi KSK
@@ -124,9 +124,9 @@ $ nix flake update nixpkgs
         `.registrar(providers.gandiVB, false)` to the Bunny zone
   - [x] After 2026-10-19 8:40 UTC (Route53 NS TTL), sign the Bunny zone and
         publish its KSK with `.sign().registrar(providers.gandiVB)`.
-- [ ] Remove the CloudFront distributions
-- [ ] Remove the Route53 zones for `bernat.ch` and `bernat.im`
-- [ ] Remove the AWS provider, with the KMS key and alias used to sign the
+- [x] Remove the CloudFront distributions
+- [x] Remove the Route53 zones for `bernat.ch` and `bernat.im`
+- [x] Remove the AWS provider, with the KMS key and alias used to sign the
       Route53 zones (AWS deletes a KMS key after 7 to 30 days)
 - [ ] Serve the Bunny CDN as `media-cdn.bernat.ch`: add it as a hostname of
       the pull zone (with TLS), use a CNAME to `media-bernat-ch.b-cdn.net`

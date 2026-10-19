@@ -5,18 +5,16 @@ import { HcloudProvider } from "./.gen/providers/hcloud/provider";
 import { VultrProvider } from "./.gen/providers/vultr/provider";
 import { GandiProvider } from "./.gen/providers/gandi/provider";
 import { BunnynetProvider } from "./.gen/providers/bunnynet/provider";
-import * as cloudfront from "./luffy/cloudfront";
 import * as bunnycdn from "./luffy/bunnycdn";
 import * as servers from "./luffy/servers";
 import * as dns from "./luffy/dns";
-import * as kms from "./luffy/kms";
 
 class LuffyStack extends TerraformStack {
   constructor(scope: Construct, ns: string) {
     super(scope, ns);
 
     /* AWS provider */
-    const awsProvider = new AwsProvider(this, "aws", {
+    new AwsProvider(this, "aws", {
       region: "us-east-1",
     });
 
@@ -65,24 +63,16 @@ class LuffyStack extends TerraformStack {
       apiKey: bunnyApiKey.value,
     });
 
-    new cloudfront.Resources(this, awsProvider);
     new bunnycdn.Resources(this, bunnyProvider);
     const serverResource = new servers.Resources(this, {
       hcloud: hcloudProvider,
       vultr: vultrProvider,
     });
-    const kmsResource = new kms.Resources(this, awsProvider);
-    new dns.Resources(
-      this,
-      serverResource.servers,
-      {
-        aws: awsProvider,
-        gandiVB: gandiProviders.vb,
-        gandiRB: gandiProviders.rb,
-        bunny: bunnyProvider,
-      },
-      kmsResource
-    );
+    new dns.Resources(this, serverResource.servers, {
+      gandiVB: gandiProviders.vb,
+      gandiRB: gandiProviders.rb,
+      bunny: bunnyProvider,
+    });
   }
 }
 

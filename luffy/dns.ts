@@ -1,21 +1,9 @@
-import { Fn, TerraformOutput, Token } from "cdktn";
+import { Fn, Token } from "cdktn";
 import type { ServerArray } from "./servers";
-import type { Resources as KMSResources } from "./kms";
 import { Construct } from "constructs";
-import { AwsProvider } from "../.gen/providers/aws/provider";
 import { GandiProvider } from "../.gen/providers/gandi/provider";
 import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
 import * as gandi from "../.gen/providers/gandi";
-import { IamUser } from "../.gen/providers/aws/iam-user";
-import { IamUserPolicy } from "../.gen/providers/aws/iam-user-policy";
-import { KmsAlias } from "../.gen/providers/aws/kms-alias";
-import { Route53HostedZoneDnssec } from "../.gen/providers/aws/route53-hosted-zone-dnssec";
-import { Route53KeySigningKey } from "../.gen/providers/aws/route53-key-signing-key";
-import {
-  Route53Record,
-  Route53RecordConfig,
-} from "../.gen/providers/aws/route53-record";
-import { Route53Zone as AwsRoute53Zone } from "../.gen/providers/aws/route53-zone";
 import * as bunnynet from "../.gen/providers/bunnynet";
 
 const RRTypes = [
@@ -43,16 +31,9 @@ type SigningKey = {
 type CommonRecordOptions = {
   ttl: number;
 };
-type RecordOptions =
-  | GandiRecordOptions
-  | Route53RecordOptions
-  | BunnyRecordOptions;
+type RecordOptions = GandiRecordOptions | BunnyRecordOptions;
 type GandiRecordOptions = Partial<CommonRecordOptions>;
 type BunnyRecordOptions = Partial<CommonRecordOptions>;
-type Route53RecordOptions = Partial<
-  CommonRecordOptions &
-    Pick<Route53RecordConfig, "setIdentifier" | "geolocationRoutingPolicy">
->;
 
 /**
  * Base class for a zone.
@@ -333,142 +314,6 @@ class GandiZone extends Zone {
   }
 }
 
-class Route53Zone extends Zone {
-  public readonly zone: AwsRoute53Zone;
-  constructor(
-    scope: Construct,
-    name: string,
-    private readonly provider: AwsProvider
-  ) {
-    super(scope, `R53-${name}`, name);
-    this.zone = new AwsRoute53Zone(this, "zone", {
-      name: name,
-      provider: this.provider,
-    });
-  }
-
-  record(
-    name: string,
-    rrtype: RR,
-    records: Records,
-    options?: Route53RecordOptions
-  ) {
-    let providerOptions = {
-      ttl: defaultTTL,
-      ...options,
-      provider: this.provider,
-    };
-    if (!Array.isArray(records)) records = [records];
-    const rname = name === "@" ? this.name : `${name}.${this.name}`;
-    new Route53Record(
-      this,
-      options?.setIdentifier
-        ? `${rrtype}-${options.setIdentifier}-${name}`
-        : `${rrtype}-${name}`,
-      {
-        zoneId: this.zone.zoneId,
-        type: rrtype,
-        name: rname,
-        records,
-        ...providerOptions,
-      }
-    );
-    return this;
-  }
-
-  // Use geolocation tags
-  www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
-    const geotags = ["continent", "country", "subdivision"] as const;
-    const rrs = servers.reduce<Record<string, ServerArray>>(
-      (acc, server) =>
-        server.tags.reduce<Record<string, ServerArray>>((acc, tag) => {
-          if (!geotags.some((g) => tag.startsWith(g))) return acc;
-          if (!(tag in acc)) {
-            return {
-              ...acc,
-              [tag]: [server],
-            };
-          }
-          return {
-            ...acc,
-            [tag]: [...acc[tag], server],
-          };
-        }, acc),
-      {
-        "country:*": servers,
-      }
-    );
-    for (const rr in rrs) {
-      const [geotag, value] = rr.split(":");
-      this.A_AAAA(name, rrs[rr], {
-        ...options,
-        setIdentifier: `geo-${geotag}-${value}`,
-        geolocationRoutingPolicy: {
-          [geotag]: value,
-        },
-      });
-    }
-    return this;
-  }
-
-  sign(dnsCMK: KmsAlias) {
-    const ksk = new Route53KeySigningKey(this, `KSK`, {
-      hostedZoneId: this.zone.zoneId,
-      keyManagementServiceArn: dnsCMK.targetKeyArn,
-      name: this.name.replace(/[^0-9a-zA-Z]/g, ""),
-      status: "ACTIVE",
-      provider: this.provider,
-    });
-    new Route53HostedZoneDnssec(this, `DNSSEC`, {
-      hostedZoneId: this.zone.zoneId,
-      signingStatus: "SIGNING",
-      provider: this.provider,
-      dependsOn: [ksk],
-    });
-    this.ksk = {
-      publicKey: ksk.publicKey,
-      algorithm: ksk.signingAlgorithmType,
-      dsRecord: ksk.dsRecord,
-    };
-    return this;
-  }
-
-  get nameservers() {
-    return this.zone.nameServers;
-  }
-
-  allowUser(username: string) {
-    const user = new IamUser(this, `IAM-${username}`, {
-      name: username,
-      path: "/",
-    });
-    new IamUserPolicy(this, `IAM-${username}-policy`, {
-      name: `AmazonRoute53-${this.name}-FullAccess`,
-      policy: Fn.jsonencode({
-        Version: "2012-10-17",
-        Statement: [
-          {
-            Effect: "Allow",
-            Action: [
-              "route53:GetChange",
-              "route53:ChangeResourceRecordSets",
-              "route53:ListResourceRecordSets",
-            ],
-            Resource: ["arn:aws:route53:::change/*", this.zone.arn],
-          },
-          {
-            Effect: "Allow",
-            Action: ["route53:ListHostedZones"],
-            Resource: "*",
-          },
-        ],
-      }),
-      user: user.id,
-    });
-    return this;
-  }
-}
-
 class BunnyZone extends Zone {
   // DS records are not supported by Bunny DNS
   public readonly zone: bunnynet.dnsZone.DnsZone;
@@ -652,21 +497,12 @@ export class Resources extends Construct {
     scope: Construct,
     servers: ServerArray,
     providers: {
-      aws: AwsProvider;
       gandiRB: GandiProvider;
       gandiVB: GandiProvider;
       bunny: BunnynetProvider;
-    },
-    awsKMS: KMSResources
+    }
   ) {
     super(scope, "luffy-dns");
-
-    /* Create an alias for DNS CMK. */
-    const dnsCMK = new KmsAlias(this, "dns-cmk", {
-      name: "alias/dns-cmk",
-      targetKeyId: awsKMS.key.keyId,
-      provider: providers.aws,
-    });
 
     // enxio.fr/enx.io (on Gandi)
     MultiZone(
@@ -718,9 +554,8 @@ export class Resources extends Construct {
       .www("www", servers)
       .fastmailMX();
 
-    // bernat.im (not signed), on Bunny, backup on Gandi and Route53
+    // bernat.im (not signed), on Bunny, backup on Gandi
     MultiZone(
-      new Route53Zone(this, "bernat.im", providers.aws),
       new GandiZone(this, "bernat.im", providers.gandiVB),
       new BunnyZone(this, "bernat.im", providers.bunny).registrar(
         providers.gandiVB,
@@ -731,9 +566,8 @@ export class Resources extends Construct {
       .www("vincent", servers)
       .fastmailMX();
 
-    // bernat.ch, on Bunny, backup on Gandi and Route53.
+    // bernat.ch, on Bunny, backup on Gandi
     MultiZone(
-      new Route53Zone(this, "bernat.ch", providers.aws).sign(dnsCMK),
       new GandiZone(this, "bernat.ch", providers.gandiVB).sign(),
       new BunnyZone(this, "bernat.ch", providers.bunny)
         .sign()
@@ -745,16 +579,6 @@ export class Resources extends Construct {
       .CNAME("4unklrhyt7lw.vincent", "gv-qcgpdhlvhtgedt.dv.googlehosted.com.")
       .fastmailMX(["vincent"])
       .fastmailServices();
-
-    // y.luffy.cx (DDNS), on Route53
-    let yLuffyCX = new Route53Zone(this, "y.luffy.cx", providers.aws)
-      .sign(dnsCMK)
-      .allowUser("DDNS");
-
-    // acme.luffy.cx (ACME DNS-01 challenges), on Route53
-    let acmeLuffyCX = new Route53Zone(this, "acme.luffy.cx", providers.aws)
-      .sign(dnsCMK)
-      .allowUser("ACME");
 
     // luffy.cx, on Gandi
     const dnsServers = servers.filter((server) => server.tags.includes("dns"));
@@ -791,17 +615,10 @@ export class Resources extends Construct {
         dnsServers.map((server) => `${server.name}.`)
       )
       .record("y", "DS", [
-        yLuffyCX.ksk!.dsRecord,
         "52941 13 2 3CBA38598E16FF9B4F7BA73D783C0F8250A0F4CABD64D8F467838732F8D8988E",
       ])
       .record("acme", "DS", [
-        acmeLuffyCX.ksk!.dsRecord,
         "55628 13 2 4946E7508F20E15F1B577A231104B029A1A82E04699A80CD46ADCE31227EE81F",
       ]);
-
-    new TerraformOutput(this, "acme-zone", {
-      value: acmeLuffyCX.zone.zoneId,
-      staticId: true,
-    });
   }
 }

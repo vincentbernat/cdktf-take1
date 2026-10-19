@@ -135,8 +135,6 @@ export class Resources extends Construct {
           "web",
           "goatcounter",
           "http-over-ssh",
-          "continent:EU",
-          "continent:AF",
           "gateway4:100.100.100.1",
           "gateway6:fe80::1",
         ],
@@ -147,7 +145,7 @@ export class Resources extends Construct {
           serverType: "cpx11",
           location: "hel1",
         }),
-        tags: ["web", "isso", "continent:EU"],
+        tags: ["web", "isso"],
         geo: { latitude: 60.34, longitude: 25.03 },
       },
       {
@@ -155,7 +153,7 @@ export class Resources extends Construct {
           serverType: "cpx11",
           location: "nbg1",
         }),
-        tags: ["web", "dns", "continent:EU", "continent:AF"],
+        tags: ["web", "dns"],
         geo: { latitude: 49.45, longitude: 11.01 },
       },
       {
@@ -164,7 +162,7 @@ export class Resources extends Construct {
           location: "ash",
           image: "39644359",
         }),
-        tags: ["web", "continent:NA", "continent:SA"],
+        tags: ["web"],
         geo: { latitude: 39.02, longitude: -77.47 },
       },
       {
@@ -172,7 +170,7 @@ export class Resources extends Construct {
           plan: "vc2-1c-2gb",
           region: "ord",
         }),
-        tags: ["web", "continent:NA", "continent:SA"],
+        tags: ["web"],
         geo: { latitude: 41.88, longitude: -87.63 },
       },
     ].map(({ server, ...rest }) => ({

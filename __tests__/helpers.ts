@@ -1,9 +1,7 @@
 import { Testing } from "cdktn";
-import { AwsProvider } from "../.gen/providers/aws/provider";
 import { GandiProvider } from "../.gen/providers/gandi/provider";
 import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
 import * as dns from "../luffy/dns";
-import * as kms from "../luffy/kms";
 import type { ServerArray } from "../luffy/servers";
 
 const server = (
@@ -31,13 +29,11 @@ export const servers: ServerArray = [
 /** Synthesize the DNS resources with the test servers. */
 export const synthesizeDns = () =>
   Testing.synthScope((scope) => {
-    const aws = new AwsProvider(scope, "aws", { region: "us-east-1" });
     const gandi = new GandiProvider(scope, "gandi", { key: "test" });
     const bunny = new BunnynetProvider(scope, "bunny", { apiKey: "test" });
-    new dns.Resources(
-      scope,
-      servers,
-      { aws, gandiVB: gandi, gandiRB: gandi, bunny },
-      new kms.Resources(scope, aws)
-    );
+    new dns.Resources(scope, servers, {
+      gandiVB: gandi,
+      gandiRB: gandi,
+      bunny,
+    });
   });

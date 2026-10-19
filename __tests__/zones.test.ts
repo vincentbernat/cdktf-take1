@@ -32,25 +32,6 @@ const gandi = (domain: string) => {
   return zone;
 };
 
-/** Route53 records. Geolocation records are returned separately. */
-const route53 = (domain: string) => {
-  const zone: Zone = {};
-  const geo: Record<string, Record<string, string[]>> = {};
-  const zoneId = zoneReference("aws_route53_zone", domain, "zone_id");
-  for (const r of records("aws_route53_record")) {
-    if (r.zone_id !== zoneId) continue;
-    const name =
-      r.name === domain ? "@" : r.name.slice(0, -(domain.length + 1));
-    const key = `${name} ${r.type}`;
-    if (r.geolocation_routing_policy) {
-      (geo[key] ??= {})[r.set_identifier] = [...r.records].sort();
-    } else {
-      add(zone, key, r.ttl, r.records);
-    }
-  }
-  return { zone, geo };
-};
-
 /** Bunny records. Names using a script are returned separately. */
 const bunny = (domain: string) => {
   const zone: Zone = {};
@@ -119,29 +100,6 @@ const domains = (type: string, attribute: string) =>
     .map((r) => r[attribute])
     .filter((d) => records("gandi_livedns_record").some((r) => r.zone === d));
 
-describe.each(domains("aws_route53_zone", "name"))(
-  "Route53 zone %s",
-  (domain) => {
-    const reference = gandi(domain);
-    const { zone, geo } = route53(domain);
-
-    it("has the same records as Gandi", () => {
-      expect(withoutHttps(zone)).toEqual(without(reference, Object.keys(geo)));
-    });
-
-    it.each(Object.keys(geo))(
-      "has geolocation records for %s matching Gandi",
-      (key) => {
-        const { "geo-country-*": fallback, ...others } = geo[key];
-        expect(fallback).toEqual(reference[key].values);
-        for (const values of Object.values(others)) {
-          expect(reference[key].values).toEqual(expect.arrayContaining(values));
-        }
-      }
-    );
-  }
-);
-
 describe.each(domains("bunnynet_dns_zone", "domain"))(
   "Bunny zone %s",
   (domain) => {
@@ -170,6 +128,5 @@ describe.each(domains("bunnynet_dns_zone", "domain"))(
 );
 
 it("compares at least one zone of each provider", () => {
-  expect(domains("aws_route53_zone", "name")).not.toHaveLength(0);
   expect(domains("bunnynet_dns_zone", "domain")).not.toHaveLength(0);
 });
