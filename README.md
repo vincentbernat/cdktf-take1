@@ -110,7 +110,7 @@ $ nix flake update nixpkgs
       (16320) next to the Bunny one (33331)
 - [x] After 2026-10-18 21:00 UTC (`.com` NS TTL), remove `.registrarKey()` on
       the Gandi zone for `vincentbernat.com`
-- [ ] Switch `bernat.ch` to Bunny:
+- [x] Switch `bernat.ch` to Bunny:
   - [x] Report to Bunny the denial of existence for script records: on names
         other than the apex, the NSEC record includes CNAME, so validating
         resolvers reject NODATA answers (`HTTPS` and `TXT` queries fail).
@@ -122,7 +122,7 @@ $ nix flake update nixpkgs
         domain is unsigned until the last step.
   - [x] Switch nameservers to Bunny at Gandi: move
         `.registrar(providers.gandiVB, false)` to the Bunny zone
-  - [ ] After 2026-10-19 8:40 UTC (Route53 NS TTL), sign the Bunny zone and
+  - [x] After 2026-10-19 8:40 UTC (Route53 NS TTL), sign the Bunny zone and
         publish its KSK with `.sign().registrar(providers.gandiVB)`.
 - [ ] Remove the CloudFront distributions
 - [ ] Remove the Route53 zones for `bernat.ch` and `bernat.im`
