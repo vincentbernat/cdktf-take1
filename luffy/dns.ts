@@ -1,6 +1,5 @@
-import { dependable, Fn, Token } from "cdktn";
+import { Fn, Token } from "cdktn";
 import type { ServerArray } from "./servers";
-import type { CdnHostname } from "./bunnycdn";
 import { Construct } from "constructs";
 import { GandiProvider } from "../.gen/providers/gandi/provider";
 import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
@@ -177,22 +176,6 @@ abstract class BasicZone extends Construct {
 
   www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
     return this.A_AAAA(name, servers, options);
-  }
-
-  /** Create records for CDN hostnames if they match the domain. */
-  cdn(hostnames: CdnHostname[], options?: RecordOptions) {
-    hostnames
-      .filter((cdn) => cdn.name.endsWith(`.${this.name}`))
-      .forEach((cdn) =>
-        this.cdnRecord(cdn.name.slice(0, -this.name.length - 1), cdn, options)
-      );
-    return this;
-  }
-
-  /** Point a name to a Bunny pull zone. */
-  protected cdnRecord(name: string, cdn: CdnHostname, options?: RecordOptions) {
-    const { pullzone } = cdn;
-    this.CNAME(name, `${pullzone.name}.${pullzone.cdnDomain}.`, options);
   }
 
   /** Create A/AAAA records for server names if they match the domain. */
@@ -489,24 +472,6 @@ export default function handleQuery(query) {
     return this;
   }
 
-  // Bunny answers with the addresses of the CDN, without a CNAME
-  protected cdnRecord(name: string, cdn: CdnHostname, options?: RecordOptions) {
-    const record = new bunnynet.dnsRecord.DnsRecord(this, `PullZone-${name}`, {
-      zone: this.zone.id,
-      type: "PullZone",
-      name,
-      ttl: options?.ttl ?? defaultTTL,
-      value: cdn.pullzone.name,
-      pullzoneId: cdn.pullzone.id,
-      provider: this.provider,
-    });
-    // The TLS certificate needs the DNS record first
-    cdn.hostname.dependsOn = [
-      ...(cdn.hostname.dependsOn ?? []),
-      dependable(record),
-    ];
-  }
-
   sign() {
     this.zone.dnssecEnabled = true;
     this.ksk = {
@@ -535,8 +500,7 @@ export class Resources extends Construct {
       gandiRB: GandiProvider;
       gandiVB: GandiProvider;
       bunny: BunnynetProvider;
-    },
-    cdn: CdnHostname[]
+    }
   ) {
     super(scope, "luffy-dns");
 
@@ -612,7 +576,6 @@ export class Resources extends Construct {
       .www("@", servers)
       .www("vincent", servers)
       .www("media", servers)
-      .cdn(cdn)
       .CNAME("4unklrhyt7lw.vincent", "gv-qcgpdhlvhtgedt.dv.googlehosted.com.")
       .fastmailMX(["vincent"])
       .fastmailServices();

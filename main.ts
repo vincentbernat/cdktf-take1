@@ -57,21 +57,16 @@ class LuffyStack extends TerraformStack {
       apiKey: bunnyApiKey.value,
     });
 
-    const cdn = new bunnycdn.Resources(this, bunnyProvider);
+    new bunnycdn.Resources(this, bunnyProvider);
     const serverResource = new servers.Resources(this, {
       hcloud: hcloudProvider,
       vultr: vultrProvider,
     });
-    new dns.Resources(
-      this,
-      serverResource.servers,
-      {
-        gandiVB: gandiProviders.vb,
-        gandiRB: gandiProviders.rb,
-        bunny: bunnyProvider,
-      },
-      cdn.hostnames
-    );
+    new dns.Resources(this, serverResource.servers, {
+      gandiVB: gandiProviders.vb,
+      gandiRB: gandiProviders.rb,
+      bunny: bunnyProvider,
+    });
   }
 }
 

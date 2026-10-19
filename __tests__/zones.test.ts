@@ -64,14 +64,6 @@ const bunny = (domain: string) => {
       case "NS":
         value = host(r.value);
         break;
-      case "PullZone": {
-        // Gandi uses a CNAME to the b-cdn.net name
-        const [, pullzone] = r.pullzone_id.match(/^\$\{(.*)\.id\}$/);
-        add(zone, `${name} CNAME`, r.ttl, [
-          `\${${pullzone}.name}.\${${pullzone}.cdn_domain}.`,
-        ]);
-        continue;
-      }
       default:
         value = r.value;
     }

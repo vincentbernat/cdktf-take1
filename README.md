@@ -128,7 +128,3 @@ $ nix flake update nixpkgs
 - [x] Remove the Route53 zones for `bernat.ch` and `bernat.im`
 - [x] Remove the AWS provider, with the KMS key and alias used to sign the
       Route53 zones (AWS deletes a KMS key after 7 to 30 days)
-- [x] Serve the Bunny CDN as `media-cdn.bernat.ch`: add it as a hostname of
-      the pull zone (with TLS) and use a `PullZone` record on Bunny (answered
-      directly, no CNAME to follow), with a CNAME to
-      `media-bernat-ch.b-cdn.net` on Gandi
