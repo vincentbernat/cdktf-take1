@@ -1,6 +1,5 @@
 import { Construct } from "constructs";
 import { App, TerraformStack, TerraformVariable } from "cdktn";
-import { AwsProvider } from "./.gen/providers/aws/provider";
 import { HcloudProvider } from "./.gen/providers/hcloud/provider";
 import { VultrProvider } from "./.gen/providers/vultr/provider";
 import { GandiProvider } from "./.gen/providers/gandi/provider";
@@ -12,11 +11,6 @@ import * as dns from "./luffy/dns";
 class LuffyStack extends TerraformStack {
   constructor(scope: Construct, ns: string) {
     super(scope, ns);
-
-    /* AWS provider */
-    new AwsProvider(this, "aws", {
-      region: "us-east-1",
-    });
 
     /* Hetzner cloud provider */
     const hcloudToken = new TerraformVariable(this, "hcloudToken", {

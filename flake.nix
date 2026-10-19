@@ -20,7 +20,6 @@
           derivationArgs.npmRebuildFlags = "--ignore-scripts";
         };
         tofu = pkgs.opentofu.withPlugins (p: [
-          p.hashicorp_aws
           p.hetznercloud_hcloud
           p.vultr_vultr
           # Not packaged in nixpkgs
@@ -95,7 +94,6 @@
 
             # Credentials
             for p in \
-              njf.nznmba.pbz/Nqzvavfgengbe \
               urgmare.pbz/ivaprag@oreang.pu \
               ihyge.pbz/ihyge@ivaprag.oreang.pu; do
                 eval "$(pass show "personal/$(echo "$p" | tr 'A-Za-z' 'N-ZA-Mn-za-m')" | grep '^export')"
