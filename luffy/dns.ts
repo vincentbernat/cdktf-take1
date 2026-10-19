@@ -550,6 +550,9 @@ class BunnyZone extends Zone {
 
   // Use a script to return the closest online server
   www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
+    if (servers.length <= 1) {
+      this.A_AAAA(name, servers, options);
+    }
     const ttl = options?.ttl ?? defaultTTL;
     const key = servers.map((server) => server.name.split(".")[0]).join("-");
     if (!(key in this.scripts)) {
@@ -771,15 +774,13 @@ export class Resources extends Construct {
       .servers(servers)
       .CNAME("eizo", "eizo.y.luffy.cx.")
       .CNAME("nsupdate", `${dnsServers[0].name}.`)
-      .A_AAAA(
+      .www(
         "comments",
-        servers.filter((server) => server.tags.includes("isso")),
-        { ttl: 60 * 60 * 2 }
+        servers.filter((server) => server.tags.includes("isso"))
       )
-      .A_AAAA(
+      .www(
         "goatcounter",
-        servers.filter((server) => server.tags.includes("goatcounter")),
-        { ttl: 60 * 60 * 2 }
+        servers.filter((server) => server.tags.includes("goatcounter"))
       )
       .NS(
         "y",
