@@ -6,6 +6,9 @@ import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
 import * as gandi from "../.gen/providers/gandi";
 import * as bunnynet from "../.gen/providers/bunnynet";
 
+const notdisabled = (servers: ServerArray) =>
+  servers.filter((server) => !server.disabled);
+
 const RRTypes = [
   "A",
   "AAAA",
@@ -135,10 +138,7 @@ abstract class BasicZone extends Construct {
 
   /** Create records for web servers. */
   www(name: string, servers: ServerArray, options?: RecordOptions) {
-    // Only keep non-disabled web servers.
-    servers = servers.filter(
-      (server) => !server.disabled && server.tags.includes("web")
-    );
+    servers = servers.filter((server) => server.tags.includes("web"));
     const web = (name: string) => {
       this.www_A_AAAA(name, servers, { ...options, ttl: 60 * 60 });
       this.record(name, "HTTPS", '1 . alpn="h2"', { ...options, ttl: 60 * 60 });
@@ -175,6 +175,7 @@ abstract class BasicZone extends Construct {
   }
 
   www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
+    servers = notdisabled(servers);
     return this.A_AAAA(name, servers, options);
   }
 
@@ -395,11 +396,13 @@ class BunnyZone extends Zone {
 
   // Use a script to return the closest online server
   www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
+    // Disabled servers are part of the key to keep the script name stable
+    const key = servers.map((server) => server.name.split(".")[0]).join("-");
+    servers = notdisabled(servers);
     if (servers.length <= 1) {
-      this.A_AAAA(name, servers, options);
+      return this.A_AAAA(name, servers, options);
     }
     const ttl = options?.ttl ?? defaultTTL;
-    const key = servers.map((server) => server.name.split(".")[0]).join("-");
     if (!(key in this.scripts)) {
       const serverList = servers.map((server) => ({
         ipv4: server.ipv4Address,
