@@ -163,6 +163,7 @@ export class Resources extends Construct {
           image: "39644359",
         }),
         tags: ["web"],
+        disabled: true,
         geo: { latitude: 39.02, longitude: -77.47 },
       },
       {
