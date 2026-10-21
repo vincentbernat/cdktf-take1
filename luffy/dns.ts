@@ -141,7 +141,10 @@ abstract class BasicZone extends Construct {
     servers = servers.filter((server) => server.tags.includes("web"));
     const web = (name: string) => {
       this.www_A_AAAA(name, servers, { ...options, ttl: 60 * 60 });
-      this.record(name, "HTTPS", '1 . alpn="h2"', { ...options, ttl: 60 * 60 });
+      this.record(name, "HTTPS", '1 . alpn="h3,h2"', {
+        ...options,
+        ttl: 60 * 60,
+      });
     };
     web(name);
     if (name === "@") {

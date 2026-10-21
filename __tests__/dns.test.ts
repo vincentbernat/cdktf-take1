@@ -64,7 +64,7 @@ describe("Bunny zone", () => {
       type: "HTTPS",
       name,
       priority: 1,
-      value: '. alpn="h2"',
+      value: '. alpn="h3,h2"',
     });
   });
 });
