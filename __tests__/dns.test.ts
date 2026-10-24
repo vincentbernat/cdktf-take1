@@ -69,28 +69,6 @@ describe("Bunny zone", () => {
   });
 });
 
-describe("Bunny geo HTTPS records", () => {
-  it.each([
-    [1, 'first.geo.vincentbernat.com alpn="h3,h2"'],
-    [2, 'second.geo.vincentbernat.com alpn="h3,h2"'],
-    [3, '. alpn="h3,h2"'],
-  ])("has priority %p for www", (priority, value) => {
-    expect(synthesized).toHaveResourceWithProperties(DnsRecord, {
-      type: "HTTPS",
-      name: "www",
-      priority,
-      value,
-    });
-  });
-
-  it.each(["first.geo", "second.geo"])("uses a script for %p", (name) => {
-    expect(synthesized).toHaveResourceWithProperties(DnsRecord, {
-      type: "Script",
-      name,
-    });
-  });
-});
-
 describe("Sites output", () => {
   const sites = JSON.parse(synthesized).output.sites.value;
 
@@ -103,11 +81,9 @@ describe("Sites output", () => {
 });
 
 describe("Bunny geo script", () => {
-  const scripts = Object.values<{ name: string; content: string }>(
+  const scripts = Object.values<{ content: string }>(
     JSON.parse(synthesized).resource.bunnynet_dns_script
   );
-  const script = (name: string) =>
-    scripts.find((s) => s.name === name)!.content;
   const paris = { latitude: 48.8, longitude: 2.3 };
   const newYork = { latitude: 40.7, longitude: -74 };
   let down: string[];
@@ -159,12 +135,11 @@ describe("Bunny geo script", () => {
     };
   });
 
-  const query = (
-    queryType: string,
-    geoLocation = paris,
-    content = scripts[0].content
-  ) => {
-    const code = content.replace("export default function", "function");
+  const query = (queryType: string, geoLocation = paris) => {
+    const code = scripts[0].content.replace(
+      "export default function",
+      "function"
+    );
     const handleQuery = vm.runInNewContext(`${code}\nhandleQuery;`, {
       ...runtime,
     });
@@ -212,19 +187,6 @@ describe("Bunny geo script", () => {
       throw new Error("monitoring is broken");
     };
     expect(query("A")).toHaveLength(servers.length);
-  });
-
-  it("returns only the closest server for first.geo", () => {
-    const content = script("vincentbernat.com-web-standard-first");
-    expect(query("A", paris, content)).toEqual(["A 192.0.2.2"]);
-    down = ["192.0.2.2"];
-    expect(query("A", paris, content)).toEqual(["A 192.0.2.4"]);
-  });
-
-  it("returns only the second closest server for second.geo", () => {
-    const content = script("vincentbernat.com-web-standard-second");
-    expect(query("A", paris, content)).toEqual(["A 192.0.2.4"]);
-    expect(query("AAAA", newYork, content)).toEqual(["AAAA 2001:db8::6"]);
   });
 
   it("returns all servers when routing fails", () => {

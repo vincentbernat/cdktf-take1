@@ -114,8 +114,7 @@ describe.each(domains("bunnynet_dns_zone", "domain"))(
       expect(withoutHttps(zone)).toEqual(without(reference, geoKeys));
     });
 
-    // Names under "geo" only exist on Bunny
-    it.each(Object.keys(scripted).filter((name) => !name.endsWith(".geo")))(
+    it.each(Object.keys(scripted))(
       "has a script for %s matching Gandi",
       (name) => {
         const servers = scriptServers(scripted[name].values[0]);

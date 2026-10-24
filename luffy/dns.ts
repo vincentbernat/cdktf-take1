@@ -154,7 +154,10 @@ abstract class BasicZone extends Construct {
     ] = group.servers.map((server) => server.name);
     const web = (name: string) => {
       this.www_A_AAAA(name, group, { ...options, ttl: 60 * 60 });
-      this.www_HTTPS(name, group, { ...options, ttl: 60 * 60 });
+      this.record(name, "HTTPS", '1 . alpn="h3,h2"', {
+        ...options,
+        ttl: 60 * 60,
+      });
     };
     web(name);
     if (name === "@") {
@@ -189,10 +192,6 @@ abstract class BasicZone extends Construct {
 
   www_A_AAAA(name: string, group: ServerGroup, options?: RecordOptions) {
     return this.A_AAAA(name, notdisabled(group.servers), options);
-  }
-
-  www_HTTPS(name: string, _group: ServerGroup, options?: RecordOptions) {
-    return this.record(name, "HTTPS", '1 . alpn="h3,h2"', options);
   }
 
   /** Create A/AAAA records for server names if they match the domain. */
@@ -335,8 +334,6 @@ class BunnyZone extends Zone {
   // DS records are not supported by Bunny DNS
   public readonly zone: bunnynet.dnsZone.DnsZone;
   private readonly scripts: Record<string, bunnynet.dnsScript.DnsScript> = {};
-  private readonly geoNames: string[] = [];
-  private geoRole: string | null = null;
   constructor(
     scope: Construct,
     name: string,
@@ -412,73 +409,14 @@ class BunnyZone extends Zone {
     return this;
   }
 
-  /** Use HTTPS records to send clients to the closest server first. */
-  geo(...names: string[]) {
-    this.geoNames.push(...names);
-    return this;
-  }
-
   // Use a script to return the closest online server
   www_A_AAAA(name: string, group: ServerGroup, options?: RecordOptions) {
+    const key = group.role;
     const servers = notdisabled(group.servers);
     if (servers.length <= 1) {
       return this.A_AAAA(name, servers, options);
     }
     const ttl = options?.ttl ?? defaultTTL;
-    this.scriptRecord(name, this.script(group.role, servers, ttl), ttl);
-    return this;
-  }
-
-  // Point to first.geo and second.geo, each returning only one server
-  www_HTTPS(name: string, group: ServerGroup, options?: RecordOptions) {
-    const servers = notdisabled(group.servers);
-    if (!this.geoNames.includes(name) || servers.length <= 1) {
-      return super.www_HTTPS(name, group, options);
-    }
-    if (this.geoRole !== null && this.geoRole !== group.role)
-      throw new Error(`${this.name}: geo names used for two roles`);
-    const ttl = options?.ttl ?? defaultTTL;
-    if (this.geoRole === null) {
-      this.geoRole = group.role;
-      this.scriptRecord(
-        "first.geo",
-        this.script(
-          `${group.role}-first`,
-          servers,
-          ttl,
-          "selected.slice(0, 1)"
-        ),
-        ttl
-      );
-      this.scriptRecord(
-        "second.geo",
-        this.script(
-          `${group.role}-second`,
-          servers,
-          ttl,
-          "selected.slice(1, 2)"
-        ),
-        ttl
-      );
-    }
-    return this.record(
-      name,
-      "HTTPS",
-      [
-        `1 first.geo.${this.name}. alpn="h3,h2"`,
-        `2 second.geo.${this.name}. alpn="h3,h2"`,
-        '3 . alpn="h3,h2"',
-      ],
-      options
-    );
-  }
-
-  private script(
-    key: string,
-    servers: ServerArray,
-    ttl: number,
-    selection: string = "selected"
-  ) {
     if (!(key in this.scripts)) {
       const serverList = servers.map((server) => ({
         ipv4: server.ipv4Address,
@@ -529,7 +467,7 @@ export default function handleQuery(query) {
     // Prefer online candidates, but fallback to anything if not online.
     pick(online);
     pick(offline);
-    return ${selection}.map((s) => answers[type](byIpv4[s.ip][family]));
+    return selected.map((s) => answers[type](byIpv4[s.ip][family]));
   } catch (e) {
     // Return all servers if anything goes wrong
     return available.map((s) => answers[type](s[family]));
@@ -540,22 +478,15 @@ export default function handleQuery(query) {
         }
       );
     }
-    return this.scripts[key];
-  }
-
-  private scriptRecord(
-    name: string,
-    script: bunnynet.dnsScript.DnsScript,
-    ttl: number
-  ) {
     new bunnynet.dnsRecord.DnsRecord(this, `Script-${name}`, {
       zone: this.zone.id,
       type: "Script",
       name: name === "@" ? "" : name,
       ttl,
-      value: Token.asString(script.id),
+      value: Token.asString(this.scripts[key].id),
       provider: this.provider,
     });
+    return this;
   }
 
   sign() {
@@ -644,7 +575,6 @@ export class Resources extends Construct {
       new BunnyZone(this, "vincentbernat.com", providers.bunny)
         .sign()
         .registrar(providers.gandiVB)
-        .geo("www")
     )
       .www("@", standardServers)
       .www("www", standardServers)
