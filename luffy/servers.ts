@@ -132,7 +132,8 @@ export class Resources extends Construct {
           "sapinet"
         ),
         tags: [
-          "web",
+          "web-standard",
+          "web-volume",
           "goatcounter",
           "http-over-ssh",
           "gateway4:100.100.100.1",
@@ -145,7 +146,7 @@ export class Resources extends Construct {
           serverType: "cpx11",
           location: "hel1",
         }),
-        tags: ["web", "isso"],
+        tags: ["web-standard", "web-volume", "isso"],
         geo: { latitude: 60.34, longitude: 25.03 },
       },
       {
@@ -153,7 +154,7 @@ export class Resources extends Construct {
           serverType: "cpx11",
           location: "nbg1",
         }),
-        tags: ["web", "dns"],
+        tags: ["web-standard", "web-volume", "dns"],
         geo: { latitude: 49.45, longitude: 11.01 },
       },
       {
@@ -162,7 +163,7 @@ export class Resources extends Construct {
           location: "ash",
           image: "39644359",
         }),
-        tags: ["web"],
+        tags: ["web-standard", "web-volume"],
         geo: { latitude: 39.02, longitude: -77.47 },
       },
       {
@@ -170,7 +171,7 @@ export class Resources extends Construct {
           plan: "vc2-1c-2gb",
           region: "ord",
         }),
-        tags: ["web"],
+        tags: ["web-standard", "web-volume"],
         geo: { latitude: 41.88, longitude: -87.63 },
       },
     ].map(({ server, ...rest }) => ({

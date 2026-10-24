@@ -14,7 +14,7 @@ const server = (
   ipv4Address: `192.0.2.${id}`,
   ipv6Address: `2001:db8::${id}`,
   hardware: "test",
-  tags: ["web", ...tags],
+  tags: ["web-standard", "web-volume", ...tags],
   geo: { latitude, longitude },
 });
 

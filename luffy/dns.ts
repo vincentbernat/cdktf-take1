@@ -138,7 +138,11 @@ abstract class BasicZone extends Construct {
 
   /** Create records for web servers. */
   www(name: string, servers: ServerArray, options?: RecordOptions) {
-    servers = servers.filter((server) => server.tags.includes("web"));
+    servers = servers.filter(
+      (server) =>
+        server.tags.includes("web-standard") ||
+        server.tags.includes("web-volume")
+    );
     const web = (name: string) => {
       this.www_A_AAAA(name, servers, { ...options, ttl: 60 * 60 });
       this.record(name, "HTTPS", '1 . alpn="h3,h2"', {
@@ -509,6 +513,12 @@ export class Resources extends Construct {
     }
   ) {
     super(scope, "luffy-dns");
+    const standardServers = servers.filter((server) =>
+      server.tags.includes("web-standard")
+    );
+    const volumeServers = servers.filter((server) =>
+      server.tags.includes("web-volume")
+    );
 
     // enxio.fr/enx.io (on Gandi)
     MultiZone(
@@ -519,26 +529,26 @@ export class Resources extends Construct {
         .sign()
         .registrar(providers.gandiVB)
     )
-      .www("@", servers)
-      .www("www", servers)
-      .www("media", servers)
+      .www("@", standardServers)
+      .www("www", standardServers)
+      .www("media", volumeServers)
       .fastmailMX();
 
     // le-val-insolite.fr (on Gandi)
     new GandiZone(this, "le-val-insolite.fr", providers.gandiVB)
       .sign()
       .registrar(providers.gandiVB)
-      .www("@", servers)
-      .www("www", servers)
+      .www("@", standardServers)
+      .www("www", standardServers)
       .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."]);
 
     // une-oasis-une-ecole.fr (on Gandi)
     new GandiZone(this, "une-oasis-une-ecole.fr", providers.gandiRB)
       .sign()
       .registrar(providers.gandiRB)
-      .www("@", servers)
-      .www("www", servers)
-      .www("media", servers)
+      .www("@", standardServers)
+      .www("www", standardServers)
+      .www("media", volumeServers)
       .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."])
       .TXT("@", [
         "google-site-verification=_GFUTYZ19KcdCDA26QfZI_w3oWDJoQyD5GyZ6a-ieh8",
@@ -556,8 +566,8 @@ export class Resources extends Construct {
         .sign()
         .registrar(providers.gandiVB)
     )
-      .www("@", servers)
-      .www("www", servers)
+      .www("@", standardServers)
+      .www("www", standardServers)
       .fastmailMX();
 
     // bernat.im (not signed), on Bunny, backup on Gandi
@@ -568,8 +578,8 @@ export class Resources extends Construct {
         false
       )
     )
-      .www("@", servers)
-      .www("vincent", servers)
+      .www("@", standardServers)
+      .www("vincent", standardServers)
       .fastmailMX();
 
     // bernat.ch, on Bunny, backup on Gandi
@@ -579,9 +589,9 @@ export class Resources extends Construct {
         .sign()
         .registrar(providers.gandiVB)
     )
-      .www("@", servers)
-      .www("vincent", servers)
-      .www("media", servers)
+      .www("@", standardServers)
+      .www("vincent", standardServers)
+      .www("media", volumeServers)
       .CNAME("4unklrhyt7lw.vincent", "gv-qcgpdhlvhtgedt.dv.googlehosted.com.")
       .fastmailMX(["vincent"])
       .fastmailServices();
@@ -592,11 +602,11 @@ export class Resources extends Construct {
       .sign()
       .registrar(providers.gandiVB)
       .fastmailMX()
-      .www("@", servers)
-      .www("media", servers)
-      .www("www", servers)
-      .www("haproxy", servers)
-      .www("*.pages", servers)
+      .www("@", standardServers)
+      .www("media", volumeServers)
+      .www("www", standardServers)
+      .www("haproxy", volumeServers)
+      .www("*.pages", standardServers)
       .www(
         "*.ssh",
         servers.filter((server) => server.tags.includes("http-over-ssh"))
