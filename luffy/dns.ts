@@ -9,6 +9,9 @@ import * as bunnynet from "../.gen/providers/bunnynet";
 const notdisabled = (servers: ServerArray) =>
   servers.filter((server) => !server.disabled);
 
+/** Servers sharing the same role. */
+type ServerGroup = { role: string; servers: ServerArray };
+
 const RRTypes = [
   "A",
   "AAAA",
@@ -137,14 +140,17 @@ abstract class BasicZone extends Construct {
   }
 
   /** Create records for web servers. */
-  www(name: string, servers: ServerArray, options?: RecordOptions) {
-    servers = servers.filter(
-      (server) =>
-        server.tags.includes("web-standard") ||
-        server.tags.includes("web-volume")
-    );
+  www(name: string, group: ServerGroup, options?: RecordOptions) {
+    group = {
+      ...group,
+      servers: group.servers.filter(
+        (server) =>
+          server.tags.includes("web-standard") ||
+          server.tags.includes("web-volume")
+      ),
+    };
     const web = (name: string) => {
-      this.www_A_AAAA(name, servers, { ...options, ttl: 60 * 60 });
+      this.www_A_AAAA(name, group, { ...options, ttl: 60 * 60 });
       this.record(name, "HTTPS", '1 . alpn="h3,h2"', {
         ...options,
         ttl: 60 * 60,
@@ -181,9 +187,8 @@ abstract class BasicZone extends Construct {
     return this;
   }
 
-  www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
-    servers = notdisabled(servers);
-    return this.A_AAAA(name, servers, options);
+  www_A_AAAA(name: string, group: ServerGroup, options?: RecordOptions) {
+    return this.A_AAAA(name, notdisabled(group.servers), options);
   }
 
   /** Create A/AAAA records for server names if they match the domain. */
@@ -402,10 +407,9 @@ class BunnyZone extends Zone {
   }
 
   // Use a script to return the closest online server
-  www_A_AAAA(name: string, servers: ServerArray, options?: RecordOptions) {
-    // Disabled servers are part of the key to keep the script name stable
-    const key = servers.map((server) => server.name.split(".")[0]).join("-");
-    servers = notdisabled(servers);
+  www_A_AAAA(name: string, group: ServerGroup, options?: RecordOptions) {
+    const key = group.role;
+    const servers = notdisabled(group.servers);
     if (servers.length <= 1) {
       return this.A_AAAA(name, servers, options);
     }
@@ -513,12 +517,12 @@ export class Resources extends Construct {
     }
   ) {
     super(scope, "luffy-dns");
-    const standardServers = servers.filter((server) =>
-      server.tags.includes("web-standard")
-    );
-    const volumeServers = servers.filter((server) =>
-      server.tags.includes("web-volume")
-    );
+    const byTag = (tag: string): ServerGroup => ({
+      role: tag,
+      servers: servers.filter((server) => server.tags.includes(tag)),
+    });
+    const standardServers = byTag("web-standard");
+    const volumeServers = byTag("web-volume");
 
     // enxio.fr/enx.io (on Gandi)
     MultiZone(
@@ -607,21 +611,12 @@ export class Resources extends Construct {
       .www("www", standardServers)
       .www("haproxy", volumeServers)
       .www("*.pages", standardServers)
-      .www(
-        "*.ssh",
-        servers.filter((server) => server.tags.includes("http-over-ssh"))
-      )
+      .www("*.ssh", byTag("http-over-ssh"))
       .servers(servers)
       .CNAME("eizo", "eizo.y.luffy.cx.")
       .CNAME("nsupdate", `${dnsServers[0].name}.`)
-      .www(
-        "comments",
-        servers.filter((server) => server.tags.includes("isso"))
-      )
-      .www(
-        "goatcounter",
-        servers.filter((server) => server.tags.includes("goatcounter"))
-      )
+      .www("comments", byTag("isso"))
+      .www("goatcounter", byTag("goatcounter"))
       .NS(
         "y",
         dnsServers.map((server) => `${server.name}.`)
