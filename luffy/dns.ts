@@ -1,4 +1,4 @@
-import { Fn, Token } from "cdktn";
+import { Fn, TerraformOutput, Token } from "cdktn";
 import type { ServerArray } from "./servers";
 import { Construct } from "constructs";
 import { GandiProvider } from "../.gen/providers/gandi/provider";
@@ -149,6 +149,9 @@ abstract class BasicZone extends Construct {
           server.tags.includes("web-volume")
       ),
     };
+    (this.node.scope as Resources).sites[
+      name === "@" ? this.name : `${name}.${this.name}`
+    ] = group.servers.map((server) => server.name);
     const web = (name: string) => {
       this.www_A_AAAA(name, group, { ...options, ttl: 60 * 60 });
       this.record(name, "HTTPS", '1 . alpn="h3,h2"', {
@@ -507,6 +510,9 @@ export default function handleQuery(query) {
 }
 
 export class Resources extends Construct {
+  /** Servers to deploy each website to. */
+  public readonly sites: Record<string, string[]> = {};
+
   constructor(
     scope: Construct,
     servers: ServerArray,
@@ -631,5 +637,10 @@ export class Resources extends Construct {
       .record("acme", "DS", [
         "55628 13 2 4946E7508F20E15F1B577A231104B029A1A82E04699A80CD46ADCE31227EE81F",
       ]);
+
+    new TerraformOutput(this, "sites", {
+      value: this.sites,
+      staticId: true,
+    });
   }
 }

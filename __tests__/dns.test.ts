@@ -69,6 +69,17 @@ describe("Bunny zone", () => {
   });
 });
 
+describe("Sites output", () => {
+  const sites = JSON.parse(synthesized).output.sites.value;
+
+  it.each(["bernat.ch", "media.bernat.ch", "*.pages.luffy.cx"])(
+    "lists web servers for %p",
+    (site) => {
+      expect(sites[site]).toEqual(servers.map((server) => server.name));
+    }
+  );
+});
+
 describe("Bunny geo script", () => {
   const scripts = Object.values<{ content: string }>(
     JSON.parse(synthesized).resource.bunnynet_dns_script
