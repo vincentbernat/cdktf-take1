@@ -555,7 +555,7 @@ export class Resources extends Construct {
     )
       .www("@", standardServers)
       .www("www", standardServers)
-      .www("media", volumeServers)
+      .www("media", standardServers)
       .fastmailMX();
 
     // le-val-insolite.fr (on Gandi)
@@ -572,7 +572,7 @@ export class Resources extends Construct {
       .registrar(providers.gandiRB)
       .www("@", standardServers)
       .www("www", standardServers)
-      .www("media", volumeServers)
+      .www("media", standardServers)
       .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."])
       .TXT("@", [
         "google-site-verification=_GFUTYZ19KcdCDA26QfZI_w3oWDJoQyD5GyZ6a-ieh8",
@@ -615,7 +615,7 @@ export class Resources extends Construct {
     )
       .www("@", standardServers)
       .www("vincent", standardServers)
-      .www("media", volumeServers)
+      .www("media", standardServers)
       .CNAME("4unklrhyt7lw.vincent", "gv-qcgpdhlvhtgedt.dv.googlehosted.com.")
       .fastmailMX(["vincent"])
       .fastmailServices();
