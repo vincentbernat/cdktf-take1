@@ -236,7 +236,6 @@ export class Resources extends Construct {
         }),
         tags: ["web-standard"],
         geo: { latitude: -23.55, longitude: -46.63 },
-        disabled: true,
       },
       {
         server: new VultrServer(this, "web10.luffy.cx", providers.vultr, {
@@ -246,7 +245,6 @@ export class Resources extends Construct {
         }),
         tags: ["web-standard"],
         geo: { latitude: -33.87, longitude: 151.21 },
-        disabled: true,
       },
     ].map(({ server, ...rest }) => ({
       ...(({ name, ipv4Address, ipv6Address, hardware, storage }: Server) => ({
