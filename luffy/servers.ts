@@ -213,7 +213,7 @@ export class Resources extends Construct {
           hddStorage: 40,
           // 6$/month
         }),
-        tags: ["web-standard", "web-volume"],
+        tags: ["web-standard"],
         geo: { latitude: 37.34, longitude: -121.89 },
       },
       {
