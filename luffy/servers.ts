@@ -197,6 +197,16 @@ export class Resources extends Construct {
         geo: { latitude: 39.02, longitude: -77.47 },
       },
       {
+        server: new VultrServer(this, "web06.luffy.cx", providers.vultr, {
+          plan: "vc2-1c-1gb",
+          region: "sgp",
+          // 5$/month
+        }),
+        tags: ["web-standard"],
+        geo: { latitude: 1.35, longitude: 103.82 },
+        disabled: true,
+      },
+      {
         server: new VultrServer(this, "web07.luffy.cx", providers.vultr, {
           plan: "vc2-1c-1gb",
           region: "sjc",
