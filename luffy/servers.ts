@@ -163,6 +163,7 @@ export class Resources extends Construct {
           "web-volume",
           "goatcounter",
           "http-over-ssh",
+          "isso",
           "gateway4:100.100.100.1",
           "gateway6:fe80::1",
         ],
@@ -174,7 +175,7 @@ export class Resources extends Construct {
           location: "hel1",
           // 5.99€/month
         }),
-        tags: ["web-standard", "web-volume", "isso"],
+        tags: ["web-standard", "web-volume"],
         geo: { latitude: 60.34, longitude: 25.03 },
       },
       {
