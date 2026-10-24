@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bunny DNS Map</title>
+    <style>
+      :root {
+        --bg: #fbfbfa;
+        --fg: #1d1d1f;
+        --muted: #6b6b70;
+        --line: #d9d9de;
+        --panel: #ffffff;
+        --accent: #2f6fde;
+        --land-empty: #e7e7ea;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #141416;
+          --fg: #ececf0;
+          --muted: #9a9aa3;
+          --line: #34343a;
+          --panel: #1c1c20;
+          --accent: #7aa7ff;
+          --land-empty: #2a2a30;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #141416;
+        --fg: #ececf0;
+        --muted: #9a9aa3;
+        --line: #34343a;
+        --panel: #1c1c20;
+        --accent: #7aa7ff;
+        --land-empty: #2a2a30;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 20px 16px 40px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 4px;
+      }
+      p.sub {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 20px;
+        align-items: center;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        margin-bottom: 14px;
+      }
+      .controls label {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .controls input[type="number"] {
+        width: 72px;
+      }
+      input,
+      select,
+      button {
+        font: inherit;
+        color: var(--fg);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        padding: 3px 6px;
+      }
+      #drop {
+        border: 2px dashed var(--line);
+        padding: 28px;
+        text-align: center;
+        color: var(--muted);
+        margin-bottom: 14px;
+      }
+      #drop.over {
+        border-color: var(--accent);
+        color: var(--fg);
+      }
+      #mapwrap {
+        position: relative;
+      }
+      canvas {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      #tip {
+        position: absolute;
+        pointer-events: none;
+        display: none;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 8px 10px;
+        font-size: 13px;
+        box-shadow: 0 4px 14px rgb(0 0 0 / 0.15);
+        white-space: nowrap;
+      }
+      #legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        margin: 14px 0 6px;
+      }
+      #legend label {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        cursor: pointer;
+      }
+      .sw {
+        width: 14px;
+        height: 14px;
+        display: inline-block;
+      }
+      .sw.striped {
+        background-size: 6px 6px;
+      }
+      .down {
+        text-decoration: line-through;
+        color: var(--muted);
+      }
+      .note {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 8px;
+      }
+      .key {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 18px;
+        align-items: center;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .key > span {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Bunny DNS answers</h1>
+      <p class="sub">
+        Servers returned by the geo script for each place, from
+        <code>cdktf.json</code>.
+      </p>
+
+      <div id="drop">
+        Drop <code>cdktf.json</code> here, or
+        <input type="file" id="file" accept=".json,application/json" />
+      </div>
+
+      <div class="controls">
+        <label
+          >Role
+          <select id="role"></select
+        ></label>
+        <label
+          >Ratio <input type="number" id="ratio" value="2" min="1" step="0.1"
+        /></label>
+        <label
+          >Extra distance (miles)
+          <input type="number" id="extra" value="1000" min="0" step="50"
+        /></label>
+        <span class="key">
+          <span
+            ><span class="sw" style="background: #888"></span> solid: only the
+            nearest server, TTL 5 min</span
+          >
+          <span
+            ><span class="sw" id="stripekey"></span> striped: nearest + second
+            (stripes), TTL 1 h</span
+          >
+        </span>
+      </div>
+
+      <div id="mapwrap">
+        <canvas id="map" width="1280" height="640"></canvas>
+        <div id="tip"></div>
+      </div>
+      <div id="legend"></div>
+      <p class="note">
+        The location is the one Bunny sees: the resolver, or the client subnet
+        when the resolver sends it. Distances use the same formula as
+        <code>GeoDistance.calculate()</code>.
+      </p>
+    </main>
+
+    <script type="module">
+      import {
+        geoContains,
+        geoNaturalEarth1,
+        geoPath,
+      } from "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm";
+      import { feature } from "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm";
+
+      const palette = [
+        "#e6194b",
+        "#3cb44b",
+        "#4363d8",
+        "#f58231",
+        "#911eb4",
+        "#42d4f4",
+        "#ffe119",
+        "#9a6324",
+        "#469990",
+        "#f032e6",
+      ];
+      const canvas = document.getElementById("map");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      const tip = document.getElementById("tip");
+      const W = canvas.width,
+        H = canvas.height,
+        STEP = 2;
+
+      const projection = geoNaturalEarth1().fitExtent(
+        [
+          [8, 8],
+          [W - 8, H - 8],
+        ],
+        { type: "Sphere" }
+      );
+      const path = geoPath(projection, ctx);
+
+      let land = null;
+      let servers = [];
+      let unchecked = new Set();
+      const RAD = Math.PI / 180;
+
+      // Points have lat/lon in radians and the cosine of the latitude
+      function point(latitude, longitude) {
+        return {
+          lat: latitude * RAD,
+          lon: longitude * RAD,
+          cos: Math.cos(latitude * RAD),
+        };
+      }
+
+      function miles(a, b) {
+        const h =
+          Math.sin((b.lat - a.lat) / 2) ** 2 +
+          a.cos * b.cos * Math.sin((b.lon - a.lon) / 2) ** 2;
+        return 2 * 3958.8 * Math.asin(Math.sqrt(h));
+      }
+
+      // Settings that do not change during a render
+      function setup() {
+        const all = roleServers();
+        return {
+          all,
+          list: all.filter((s) => !unchecked.has(s.name)),
+          ratio: +document.getElementById("ratio").value,
+          extra: +document.getElementById("extra").value,
+        };
+      }
+
+      // Same logic as the Bunny script: the two closest servers
+      function answer(location, cfg) {
+        let a = null,
+          da = Infinity,
+          b = null,
+          db = Infinity;
+        for (const s of cfg.list) {
+          const d = miles(s.point, location);
+          if (d < da) {
+            b = a;
+            db = da;
+            a = s;
+            da = d;
+          } else if (d < db) {
+            b = s;
+            db = d;
+          }
+        }
+        const selected = [a, b].filter(Boolean);
+        const dist = [da, db].slice(0, selected.length);
+        if (
+          selected.length === 2 &&
+          dist[1] > cfg.ratio * dist[0] &&
+          dist[1] - dist[0] > cfg.extra
+        )
+          return { selected: [selected[0]], ttl: 300, dist };
+        return { selected, ttl: 3600, dist };
+      }
+
+      function roleServers() {
+        const role = document.getElementById("role").value;
+        return servers.filter((s) => s.tags.includes(role));
+      }
+
+      function parse(json) {
+        const value = Array.isArray(json)
+          ? json
+          : json.servers?.value ?? json.servers;
+        if (!Array.isArray(value)) throw new Error("no servers in this file");
+        servers = value
+          .filter((s) => s.geo)
+          .map((s, i) => ({
+            name: s.name.split(".")[0],
+            latitude: s.geo.latitude,
+            longitude: s.geo.longitude,
+            point: point(s.geo.latitude, s.geo.longitude),
+            tags: s.tags ?? [],
+            disabled: !!s.disabled,
+          }));
+        servers.forEach((s, i) => {
+          s.color = palette[i % palette.length];
+          s.rgb = rgb(s.color);
+        });
+        unchecked = new Set(
+          servers.filter((s) => s.disabled).map((s) => s.name)
+        );
+        const roles = [
+          ...new Set(
+            servers.flatMap((s) => s.tags).filter((t) => t.startsWith("web-"))
+          ),
+        ];
+        const select = document.getElementById("role");
+        select.innerHTML = roles.map((r) => `<option>${r}</option>`).join("");
+        if (roles.includes("web-standard")) select.value = "web-standard";
+        document.getElementById("drop").style.display = "none";
+        render();
+      }
+
+      function legend() {
+        const el = document.getElementById("legend");
+        const list = roleServers();
+        el.innerHTML = "";
+        for (const s of list) {
+          const label = document.createElement("label");
+          const box = document.createElement("input");
+          box.type = "checkbox";
+          box.checked = !unchecked.has(s.name);
+          box.onchange = () => {
+            box.checked ? unchecked.delete(s.name) : unchecked.add(s.name);
+            render();
+          };
+          const text = document.createElement("span");
+          text.textContent = s.disabled ? `${s.name} (disabled)` : s.name;
+          if (unchecked.has(s.name)) text.className = "down";
+          label.append(
+            box,
+            Object.assign(document.createElement("span"), {
+              className: "sw",
+              style: `background:${s.color}`,
+            }),
+            text
+          );
+          el.append(label);
+        }
+      }
+
+      function rgb(hex) {
+        const n = parseInt(hex.slice(1), 16);
+        return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+      }
+
+      function render() {
+        if (!land) return;
+        const css = getComputedStyle(document.documentElement);
+        ctx.clearRect(0, 0, W, H);
+
+        // Land mask
+        ctx.beginPath();
+        path(land);
+        ctx.fillStyle = "#000";
+        ctx.fill();
+        const mask = ctx.getImageData(0, 0, W, H).data;
+        ctx.clearRect(0, 0, W, H);
+
+        const cfg = setup();
+        const list = cfg.list;
+        legend();
+        const img = ctx.createImageData(W, H);
+        const cols = Math.ceil(W / STEP),
+          rows = Math.ceil(H / STEP);
+        const onLand = (x, y) => {
+          for (let dy = 0; dy < STEP && y + dy < H; dy++)
+            for (let dx = 0; dx < STEP && x + dx < W; dx++)
+              if (mask[((y + dy) * W + x + dx) * 4 + 3]) return true;
+          return false;
+        };
+        if (list.length) {
+          for (let by = 0; by < rows; by++) {
+            for (let bx = 0; bx < cols; bx++) {
+              const x = bx * STEP,
+                y = by * STEP;
+              if (!onLand(x, y)) continue;
+              const ll = projection.invert([x + STEP / 2, y + STEP / 2]);
+              if (!ll || !isFinite(ll[0])) continue;
+              const r = answer(point(ll[1], ll[0]), cfg);
+              const stripe = r.selected.length === 2 && (bx + by) % 4 < 1;
+              const c = r.selected[stripe ? 1 : 0].rgb;
+              for (let dy = 0; dy < STEP && y + dy < H; dy++) {
+                for (let dx = 0; dx < STEP && x + dx < W; dx++) {
+                  const o = ((y + dy) * W + x + dx) * 4;
+                  if (!mask[o + 3]) continue;
+                  img.data[o] = c[0];
+                  img.data[o + 1] = c[1];
+                  img.data[o + 2] = c[2];
+                  img.data[o + 3] = Math.round(mask[o + 3] * 0.85);
+                }
+              }
+            }
+          }
+        }
+        ctx.putImageData(img, 0, 0);
+
+        // Outlines
+        ctx.beginPath();
+        path({ type: "Sphere" });
+        ctx.strokeStyle = css.getPropertyValue("--line");
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.beginPath();
+        path(land);
+        ctx.strokeStyle = css.getPropertyValue("--muted");
+        ctx.lineWidth = 0.4;
+        ctx.stroke();
+
+        // Servers, with labels placed to avoid overlaps
+        ctx.font = "600 13px system-ui, sans-serif";
+        const boxes = [];
+        for (const s of cfg.all) {
+          const [x, y] = projection([s.longitude, s.latitude]);
+          ctx.beginPath();
+          ctx.arc(x, y, 5, 0, 2 * Math.PI);
+          ctx.fillStyle = unchecked.has(s.name) ? "#fff" : s.color;
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = css.getPropertyValue("--fg");
+          ctx.stroke();
+          const w = ctx.measureText(s.name).width,
+            h = 13;
+          const spots = [
+            [x + 8, y - 6],
+            [x + 8, y + 16],
+            [x - 8 - w, y - 6],
+            [x - 8 - w, y + 16],
+          ];
+          const overlaps = ([lx, ly]) =>
+            boxes.some(
+              ([bx, by]) =>
+                lx < bx + w + 4 && bx < lx + w + 4 && ly - h < by && by - h < ly
+            );
+          const [lx, ly] = spots.find((p) => !overlaps(p)) ?? spots[0];
+          boxes.push([lx, ly]);
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = css.getPropertyValue("--bg");
+          ctx.strokeText(s.name, lx, ly);
+          ctx.fillStyle = css.getPropertyValue("--fg");
+          ctx.fillText(s.name, lx, ly);
+        }
+
+        const key = document.getElementById("stripekey");
+        if (list.length > 1)
+          key.style.background = `repeating-linear-gradient(45deg, ${list[1].color} 0 2px, ${list[0].color} 2px 6px)`;
+      }
+
+      canvas.addEventListener("mousemove", (e) => {
+        if (!servers.length) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * W;
+        const y = ((e.clientY - rect.top) / rect.height) * H;
+        const ll = projection.invert([x, y]);
+        if (!ll || !geoContains(land, ll)) {
+          tip.style.display = "none";
+          return;
+        }
+        const r = answer(point(ll[1], ll[0]), setup());
+        const fmt = (d) => `${Math.round(d).toLocaleString()} mi`;
+        const lines = [`<b>${ll[1].toFixed(1)}°, ${ll[0].toFixed(1)}°</b>`];
+        r.selected.forEach((s, i) =>
+          lines.push(
+            `<span class="sw" style="background:${
+              s.color
+            };vertical-align:-2px"></span> ${s.name} · ${fmt(r.dist[i])}`
+          )
+        );
+        if (r.selected.length === 1 && r.dist.length === 2)
+          lines.push(
+            `<span style="color:var(--muted)">second would be ${fmt(
+              r.dist[1]
+            )}</span>`
+          );
+        lines.push(`TTL ${r.ttl === 300 ? "5 min" : "1 h"}`);
+        tip.innerHTML = lines.join("<br>");
+        tip.style.display = "block";
+        const left = e.clientX - rect.left + 14;
+        tip.style.left =
+          Math.min(left, rect.width - tip.offsetWidth - 4) + "px";
+        tip.style.top = e.clientY - rect.top + 14 + "px";
+      });
+      canvas.addEventListener("mouseleave", () => (tip.style.display = "none"));
+
+      for (const id of ["role", "ratio", "extra"])
+        document.getElementById(id).addEventListener("input", render);
+      matchMedia("(prefers-color-scheme: dark)").addEventListener(
+        "change",
+        render
+      );
+
+      function load(file) {
+        file
+          .text()
+          .then((t) => parse(JSON.parse(t)))
+          .catch((err) => alert(`Cannot read ${file.name}: ${err.message}`));
+      }
+      document
+        .getElementById("file")
+        .addEventListener(
+          "change",
+          (e) => e.target.files[0] && load(e.target.files[0])
+        );
+      const drop = document.getElementById("drop");
+      document.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        drop.classList.add("over");
+      });
+      document.addEventListener("dragleave", () =>
+        drop.classList.remove("over")
+      );
+      document.addEventListener("drop", (e) => {
+        e.preventDefault();
+        drop.classList.remove("over");
+        if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]);
+      });
+
+      fetch("https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/land-50m.json")
+        .then((r) => r.json())
+        .then((topo) => {
+          land = feature(topo, topo.objects.land);
+          // Load cdktf.json automatically when served next to it
+          return fetch("cdktf.json")
+            .then((r) => (r.ok ? r.json().then(parse) : render()))
+            .catch(() => render());
+        });
+    </script>
+  </body>
+</html>

@@ -432,8 +432,8 @@ class BunnyZone extends Zone {
 const servers = ${JSON.stringify(serverList, null, 2)};
 const families = { A: "ipv4", AAAA: "ipv6" };
 const answers = {
-  A: (ip) => new ARecord(ip, ${ttl}),
-  AAAA: (ip) => new AaaaRecord(ip, ${ttl}),
+  A: (ip, ttl = ${ttl}) => new ARecord(ip, ttl),
+  AAAA: (ip, ttl = ${ttl}) => new AaaaRecord(ip, ttl),
 };
 
 export default function handleQuery(query) {
@@ -459,7 +459,11 @@ export default function handleQuery(query) {
     const pick = (list) => {
       let candidates = list;
       while (selected.length < 2 && candidates.length > 0) {
-        const server = RoutingEngine.getClosestServer(candidates, location, false);
+        const server = RoutingEngine.getClosestServer(
+          candidates,
+          location,
+          false
+        );
         selected.push(server);
         candidates = candidates.filter((s) => s.ip !== server.ip);
       }
@@ -467,6 +471,16 @@ export default function handleQuery(query) {
     // Prefer online candidates, but fallback to anything if not online.
     pick(online);
     pick(offline);
+    // When the second server is far away (more than double _and_ more than 1000 miles
+    // away), only return the closest one with a short TTL.
+    if (selected.length === 2) {
+      const [first, second] = selected.map((s) =>
+        GeoDistance.calculate(s, location)
+      );
+      if (second > 2 * first && second - first > 1000) {
+        return [answers[type](byIpv4[selected[0].ip][family], 300)];
+      }
+    }
     return selected.map((s) => answers[type](byIpv4[s.ip][family]));
   } catch (e) {
     // Return all servers if anything goes wrong

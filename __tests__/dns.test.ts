@@ -86,6 +86,7 @@ describe("Bunny geo script", () => {
   );
   const paris = { latitude: 48.8, longitude: 2.3 };
   const newYork = { latitude: 40.7, longitude: -74 };
+  const frankfurt = { latitude: 50.1, longitude: 8.7 };
   let down: string[];
   let runtime: Record<string, any>;
 
@@ -118,6 +119,20 @@ describe("Bunny geo script", () => {
           return { isOnline: !down.includes(ip), latency: 1 };
         },
       },
+      GeoDistance: {
+        calculate: (
+          a: { latitude: number; longitude: number },
+          b: { latitude: number; longitude: number }
+        ) => {
+          const rad = (deg: number) => (deg * Math.PI) / 180;
+          const h =
+            Math.sin(rad(b.latitude - a.latitude) / 2) ** 2 +
+            Math.cos(rad(a.latitude)) *
+              Math.cos(rad(b.latitude)) *
+              Math.sin(rad(b.longitude - a.longitude) / 2) ** 2;
+          return 2 * 3958.8 * Math.asin(Math.sqrt(h));
+        },
+      },
       RoutingEngine: {
         getClosestServer: (
           list: { ip: string; latitude: number; longitude: number }[],
@@ -135,7 +150,7 @@ describe("Bunny geo script", () => {
     };
   });
 
-  const query = (queryType: string, geoLocation = paris) => {
+  const run = (queryType: string, geoLocation = paris) => {
     const code = scripts[0].content.replace(
       "export default function",
       "function"
@@ -143,10 +158,12 @@ describe("Bunny geo script", () => {
     const handleQuery = vm.runInNewContext(`${code}\nhandleQuery;`, {
       ...runtime,
     });
-    return handleQuery({ request: { queryType, geoLocation } }).map(
+    return handleQuery({ request: { queryType, geoLocation } });
+  };
+  const query = (queryType: string, geoLocation = paris) =>
+    run(queryType, geoLocation).map(
       (answer: { type: string; ip: string }) => `${answer.type} ${answer.ip}`
     );
-  };
 
   it("returns the two closest servers", () => {
     expect(query("A")).toEqual(["A 192.0.2.2", "A 192.0.2.4"]);
@@ -157,8 +174,20 @@ describe("Bunny geo script", () => {
   });
 
   it("uses the TTL of web records", () => {
-    const code = scripts[0].content;
-    expect(code).toContain("new ARecord(ip, 3600)");
+    expect(run("A").map((answer: { ttl: number }) => answer.ttl)).toEqual([
+      3600, 3600,
+    ]);
+  });
+
+  it("returns only the closest server when the second one is far", () => {
+    down = ["192.0.2.3", "192.0.2.4"];
+    expect(run("A")).toEqual([
+      expect.objectContaining({ ip: "192.0.2.2", ttl: 300 }),
+    ]);
+  });
+
+  it("returns two servers when location is unknown", () => {
+    expect(query("A", {} as typeof paris)).toHaveLength(2);
   });
 
   it("accepts any case for the query type", () => {
@@ -172,7 +201,10 @@ describe("Bunny geo script", () => {
 
   it("skips servers that are down", () => {
     down = ["192.0.2.4"];
-    expect(query("AAAA")).toEqual(["AAAA 2001:db8::2", "AAAA 2001:db8::3"]);
+    expect(query("AAAA", frankfurt)).toEqual([
+      "AAAA 2001:db8::2",
+      "AAAA 2001:db8::3",
+    ]);
   });
 
   it("completes with the closest servers that are down", () => {
