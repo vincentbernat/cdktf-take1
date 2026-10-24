@@ -130,6 +130,7 @@ export class Resources extends Construct {
           "45.90.160.60",
           "2a0c:8881:5:100::1",
           "sapinet"
+          // 6€/month
         ),
         tags: [
           "web-standard",
@@ -145,6 +146,7 @@ export class Resources extends Construct {
         server: new HetznerServer(this, "web03.luffy.cx", providers.hcloud, {
           serverType: "cpx11",
           location: "hel1",
+          // 5.99€/month
         }),
         tags: ["web-standard", "web-volume", "isso"],
         geo: { latitude: 60.34, longitude: 25.03 },
@@ -153,6 +155,7 @@ export class Resources extends Construct {
         server: new HetznerServer(this, "web04.luffy.cx", providers.hcloud, {
           serverType: "cpx11",
           location: "nbg1",
+          // 5.99€/month
         }),
         tags: ["web-standard", "web-volume", "dns"],
         geo: { latitude: 49.45, longitude: 11.01 },
@@ -162,6 +165,7 @@ export class Resources extends Construct {
           serverType: "cpx11",
           location: "ash",
           image: "39644359",
+          // 6.49€/month
         }),
         tags: ["web-standard", "web-volume"],
         geo: { latitude: 39.02, longitude: -77.47 },
@@ -170,6 +174,7 @@ export class Resources extends Construct {
         server: new VultrServer(this, "web06.luffy.cx", providers.vultr, {
           plan: "vc2-1c-2gb",
           region: "ord",
+          // 10$/month
         }),
         tags: ["web-standard", "web-volume"],
         geo: { latitude: 41.88, longitude: -87.63 },
