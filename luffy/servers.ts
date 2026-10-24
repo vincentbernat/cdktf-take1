@@ -215,6 +215,15 @@ export class Resources extends Construct {
         tags: ["web-standard", "web-volume"],
         geo: { latitude: 37.34, longitude: -121.89 },
       },
+      {
+        server: new VultrServer(this, "web08.luffy.cx", providers.vultr, {
+          plan: "vc2-1c-1gb",
+          region: "nrt",
+          // 5$/month
+        }),
+        tags: ["web-standard"],
+        geo: { latitude: 35.68, longitude: 139.69 },
+      },
     ].map(({ server, ...rest }) => ({
       ...(({ name, ipv4Address, ipv6Address, hardware, storage }: Server) => ({
         name,
