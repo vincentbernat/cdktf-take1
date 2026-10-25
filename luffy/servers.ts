@@ -189,7 +189,6 @@ export class Resources extends Construct {
         }),
         tags: ["web-standard"],
         geo: { latitude: 37.34, longitude: -121.89 },
-        disabled: true,
       },
       {
         server: new VultrServer(this, "web08.luffy.cx", providers.vultr, {
