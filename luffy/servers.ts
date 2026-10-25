@@ -85,7 +85,10 @@ class VultrServer extends Construct implements Server {
     super(scope, name);
     this.server = new vultr.instance.Instance(this, name, {
       hostname: name,
+      enableIpv6: true,
       ddosProtection: false,
+      backups: "disabled",
+      osId: 159, // custom installed
       ...config,
       provider,
     });
