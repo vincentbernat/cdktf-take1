@@ -144,16 +144,6 @@ export class Resources extends Construct {
         geo: { latitude: 48.88, longitude: 2.22 },
       },
       {
-        server: new HetznerServer(this, "web03.luffy.cx", providers.hcloud, {
-          serverType: "cpx11",
-          location: "hel1",
-          // 5.99€/month
-        }),
-        tags: ["web-standard", "web-volume"],
-        geo: { latitude: 60.34, longitude: 25.03 },
-        disabled: true,
-      },
-      {
         server: new HetznerServer(this, "web04.luffy.cx", providers.hcloud, {
           serverType: "cpx11",
           location: "nbg1",
@@ -189,16 +179,6 @@ export class Resources extends Construct {
         }),
         tags: ["web-standard"],
         geo: { latitude: 37.34, longitude: -121.89 },
-      },
-      {
-        server: new VultrServer(this, "web08.luffy.cx", providers.vultr, {
-          plan: "vc2-1c-1gb",
-          region: "nrt",
-          // 5$/month
-        }),
-        tags: ["web-standard"],
-        geo: { latitude: 35.68, longitude: 139.69 },
-        disabled: true,
       },
       {
         server: new VultrServer(this, "web09.luffy.cx", providers.vultr, {
