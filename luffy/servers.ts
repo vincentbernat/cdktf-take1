@@ -11,7 +11,6 @@ interface Server {
   readonly ipv4Address: string | null;
   readonly ipv6Address: string | null;
   readonly hardware: string;
-  readonly storage?: { size: number; device: string };
 }
 
 class GenericServer extends Construct implements Server {
@@ -76,18 +75,12 @@ class VultrServer extends Construct implements Server {
   public readonly ipv4Address: string;
   public readonly ipv6Address: string;
   public readonly hardware = "vultr";
-  public readonly storage: Server["storage"];
 
   constructor(
     scope: Construct,
     public readonly name: string,
     provider: VultrProvider,
-    {
-      hddStorage,
-      ...config
-    }: Pick<vultr.instance.InstanceConfig, "plan" | "region"> & {
-      hddStorage?: number;
-    }
+    config: Pick<vultr.instance.InstanceConfig, "plan" | "region">
   ) {
     super(scope, name);
     this.server = new vultr.instance.Instance(this, name, {
@@ -96,25 +89,6 @@ class VultrServer extends Construct implements Server {
       ...config,
       provider,
     });
-    if (hddStorage) {
-      const storage = new vultr.blockStorage.BlockStorage(
-        this,
-        `storage-${name}`,
-        {
-          label: name,
-          region: config.region,
-          sizeGb: hddStorage,
-          blockType: "storage_opt",
-          attachedToInstance: this.server.id,
-          live: true,
-          provider,
-        }
-      );
-      this.storage = {
-        size: hddStorage,
-        device: `/dev/disk/by-id/virtio-${storage.mountId}`,
-      };
-    }
     this.ipv4Address = this.server.mainIp;
     this.ipv6Address = Fn.cidrhost(
       Fn.format("%s/128", [this.server.v6MainIp]),
@@ -211,8 +185,7 @@ export class Resources extends Construct {
         server: new VultrServer(this, "web07.luffy.cx", providers.vultr, {
           plan: "vc2-1c-1gb",
           region: "sjc",
-          hddStorage: 40,
-          // 6$/month
+          // 5$/month
         }),
         tags: ["web-standard"],
         geo: { latitude: 37.34, longitude: -121.89 },
@@ -247,12 +220,11 @@ export class Resources extends Construct {
         geo: { latitude: -33.87, longitude: 151.21 },
       },
     ].map(({ server, ...rest }) => ({
-      ...(({ name, ipv4Address, ipv6Address, hardware, storage }: Server) => ({
+      ...(({ name, ipv4Address, ipv6Address, hardware }: Server) => ({
         name,
         ipv4Address,
         ipv6Address,
         hardware,
-        ...(storage && { storage }),
       }))(server),
       ...rest,
     }));
