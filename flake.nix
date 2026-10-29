@@ -49,7 +49,7 @@
             repo = "terraform-provider-gandi";
             rev = "vbe/master";
             version = "2.2.0";
-            hash = "sha256-S4963qaFtn4lymprDLHvHJImq1I97tqhM59HQbwS/Vk=";
+            hash = "sha256-TNgrryVpU/R4xNcGnWPEjiZpJ0mLpFtXQIbXbghz+BY=";
             vendorHash = "sha256-uWTY8cFztXFrQQ7GW6/R+x9M6vHmsb934ldq+oeW5vk=";
           })
         ]);
