@@ -532,6 +532,7 @@ export default function handleQuery(query) {
 
 class DesecZone extends Zone {
   public readonly zone: desec.domain.Domain;
+  private readonly rrsets: desec.records.RecordsRrsets[] = [];
   constructor(
     scope: Construct,
     name: string,
@@ -540,6 +541,13 @@ class DesecZone extends Zone {
     super(scope, `D-${name}`, name);
     this.zone = new desec.domain.Domain(this, "zone", {
       name,
+      provider: this.provider,
+    });
+    // All records are sent in one request to avoid rate limiting
+    new desec.records.Records(this, "records", {
+      domain: this.zone.name,
+      exclusive: true,
+      rrsets: this.rrsets,
       provider: this.provider,
     });
   }
@@ -563,13 +571,11 @@ class DesecZone extends Zone {
       records = records.map((record) =>
         record.replace(/="([^"\s\\]*)"/g, "=$1")
       );
-    new desec.rrset.Rrset(this, `${rrtype}-${name}`, {
-      domain: this.zone.name,
+    this.rrsets.push({
       subname: name,
       type: rrtype,
       ttl: options?.ttl ?? defaultTTL,
       rdata: records,
-      provider: this.provider,
     });
     return this;
   }

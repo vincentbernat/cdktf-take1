@@ -2,7 +2,6 @@ import "cdktn/lib/testing/adapters/jest";
 import * as vm from "vm";
 import { DnsRecord } from "../.gen/providers/bunnynet/dns-record";
 import { DnsZone } from "../.gen/providers/bunnynet/dns-zone";
-import { Rrset } from "../.gen/providers/desec/rrset";
 import { servers, synthesizeDns } from "./helpers";
 
 const synthesized = synthesizeDns();
@@ -71,20 +70,23 @@ describe("Bunny zone", () => {
 });
 
 describe("deSEC zone", () => {
+  const records = Object.values<any>(
+    JSON.parse(synthesized).resource.desec_records
+  ).find((r) => r.domain.includes("D-enxio_zone"));
+  const rdata = (subname: string, type: string) =>
+    records.rrsets.find((r: any) => r.subname === subname && r.type === type)
+      ?.rdata;
+
+  it("removes records not declared", () => {
+    expect(records.exclusive).toBe(true);
+  });
+
   it("removes quotes from HTTPS parameters", () => {
-    expect(synthesized).toHaveResourceWithProperties(Rrset, {
-      type: "HTTPS",
-      subname: "@",
-      rdata: ["1 . alpn=h3,h2"],
-    });
+    expect(rdata("@", "HTTPS")).toEqual(["1 . alpn=h3,h2"]);
   });
 
   it("quotes TXT records", () => {
-    expect(synthesized).toHaveResourceWithProperties(Rrset, {
-      type: "TXT",
-      subname: "_dmarc",
-      rdata: ['"v=DMARC1; p=reject; sp=reject"'],
-    });
+    expect(rdata("_dmarc", "TXT")).toEqual(['"v=DMARC1; p=reject; sp=reject"']);
   });
 
   it.each([
@@ -95,13 +97,8 @@ describe("deSEC zone", () => {
     ],
     ["CAA", "@", ['0 issue "letsencrypt.org"', '0 issuewild ";"']],
     ["CNAME", "_acme-challenge", ["enx.io.acme.luffy.cx."]],
-  ])("keeps %s records as is", (type, subname, rdata) => {
-    expect(synthesized).toHaveResourceWithProperties(Rrset, {
-      domain: expect.stringContaining("D-enxio_zone"),
-      type,
-      subname,
-      rdata,
-    });
+  ])("keeps %s records as is", (type, subname, expected) => {
+    expect(rdata(subname, type)).toEqual(expected);
   });
 });
 
