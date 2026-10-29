@@ -43,13 +43,13 @@
             homepage = "https://registry.terraform.io/providers/timofurrer/desec";
             provider-source-address = "registry.terraform.io/timofurrer/desec";
           })
-          # Fork with the livedns_key resource
+          # Fork with the livedns_key resource and other fixes
           (p.go-gandi_gandi.override {
             owner = "vincentbernat";
             repo = "terraform-provider-gandi";
-            rev = "feature/livedns-key";
+            rev = "vbe/master";
             version = "2.2.0";
-            hash = "sha256-XNKMqVQ/tVG2OHyuBtBdrrZa4jFzCw8a5WLKELuqKkw=";
+            hash = "sha256-S4963qaFtn4lymprDLHvHJImq1I97tqhM59HQbwS/Vk=";
             vendorHash = "sha256-uWTY8cFztXFrQQ7GW6/R+x9M6vHmsb934ldq+oeW5vk=";
           })
         ]);
