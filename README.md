@@ -147,6 +147,10 @@ Based on that, alternatives are:
 - [Netim](https://www.netim.com/en/domain-name/extensions-list)
 - [Joker.com](https://joker.com/domain/prices)
 
+As Bunny does not support DS records, I still need to host `luffy.cx` somewhere.
+[deSEC](https://desec.io/) looks like a good alternative. It has a [Terraform
+provider](https://github.com/timofurrer/terraform-provider-desec).
+
 #### Support
 
 | Provider     | API                        | Terraform                   |
