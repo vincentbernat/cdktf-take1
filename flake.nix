@@ -79,11 +79,35 @@
             ln -nsf ${nodeEnv}/node_modules $out/node_modules
           '';
         };
+        tofuSandboxed = pkgs.writeShellApplication {
+          name = "tofu";
+          runtimeInputs = [
+            pkgs.bubblewrap
+            pkgs.git
+          ];
+          text = ''
+            root=$(git rev-parse --show-toplevel)
+            exec bwrap \
+              --ro-bind /nix/store /nix/store \
+              --ro-bind /etc/resolv.conf /etc/resolv.conf \
+              --dev /dev \
+              --proc /proc \
+              --tmpfs /tmp \
+              --tmpfs "$HOME" \
+              --bind "$root" "$root" \
+              --chdir "$PWD" \
+              --unshare-all \
+              --share-net \
+              --die-with-parent \
+              --setenv SSL_CERT_FILE ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt \
+              -- ${tofu}/bin/tofu "$@"
+          '';
+        };
         deploy = pkgs.writeShellApplication {
           name = "deploy";
           runtimeInputs = [
             nodejs
-            tofu
+            tofuSandboxed
           ];
           text = ''
             root=$(git rev-parse --show-toplevel)
@@ -143,7 +167,7 @@
           name = "cdktf-take1";
           buildInputs = [
             nodejs
-            tofu
+            tofuSandboxed
             deploy
           ];
           shellHook = ''
