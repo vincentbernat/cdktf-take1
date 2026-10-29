@@ -627,27 +627,27 @@ export class Resources extends Construct {
       .www("media", standardServers)
       .fastmailMX();
 
-    // le-val-insolite.fr (on Gandi), backup on Bunny
+    // le-val-insolite.fr, on Bunny, backup on Gandi
     MultiZone(
       new GandiZone(this, "le-val-insolite.fr", providers.gandiVB)
         .sign()
-        .registrar(providers.gandiVB),
+        .registrarKey(providers.gandiVB),
       new BunnyZone(this, "le-val-insolite.fr", providers.bunny)
         .sign()
-        .registrarKey(providers.gandiVB)
+        .registrar(providers.gandiVB)
     )
       .www("@", standardServers)
       .www("www", standardServers)
       .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."]);
 
-    // une-oasis-une-ecole.fr (on Gandi), backup on Bunny
+    // une-oasis-une-ecole.fr, on Bunny, backup on Gandi
     MultiZone(
       new GandiZone(this, "une-oasis-une-ecole.fr", providers.gandiRB)
         .sign()
-        .registrar(providers.gandiRB),
+        .registrarKey(providers.gandiRB),
       new BunnyZone(this, "une-oasis-une-ecole.fr", providers.bunny)
         .sign()
-        .registrarKey(providers.gandiRB)
+        .registrar(providers.gandiRB)
     )
       .www("@", standardServers)
       .www("www", standardServers)
