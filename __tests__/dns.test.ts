@@ -86,6 +86,23 @@ describe("deSEC zone", () => {
       rdata: ['"v=DMARC1; p=reject; sp=reject"'],
     });
   });
+
+  it.each([
+    [
+      "MX",
+      "@",
+      ["10 in1-smtp.messagingengine.com.", "20 in2-smtp.messagingengine.com."],
+    ],
+    ["CAA", "@", ['0 issue "letsencrypt.org"', '0 issuewild ";"']],
+    ["CNAME", "_acme-challenge", ["enx.io.acme.luffy.cx."]],
+  ])("keeps %s records as is", (type, subname, rdata) => {
+    expect(synthesized).toHaveResourceWithProperties(Rrset, {
+      domain: expect.stringContaining("D-enxio_zone"),
+      type,
+      subname,
+      rdata,
+    });
+  });
 });
 
 describe("Sites output", () => {

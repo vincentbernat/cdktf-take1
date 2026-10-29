@@ -613,20 +613,14 @@ export class Resources extends Construct {
     const standardServers = byTag("web-standard");
     const volumeServers = byTag("web-volume");
 
-    // enxio.fr on deSEC, backup on Gandi. enx.io on Gandi, backup on deSEC.
+    // enxio.fr/enx.io on deSEC
     MultiZone(
-      new GandiZone(this, "enxio.fr", providers.gandiVB)
-        .sign()
-        .registrarKey(providers.gandiVB),
       new DesecZone(this, "enxio.fr", providers.desec)
-        .sign()
-        .registrar(providers.gandiVB),
-      new GandiZone(this, "enx.io", providers.gandiVB)
         .sign()
         .registrar(providers.gandiVB),
       new DesecZone(this, "enx.io", providers.desec)
         .sign()
-        .registrarKey(providers.gandiVB)
+        .registrar(providers.gandiVB)
     )
       .www("@", standardServers)
       .www("www", standardServers)
