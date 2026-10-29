@@ -643,13 +643,9 @@ export class Resources extends Construct {
       .www("www", standardServers)
       .www("media", standardServers)
       .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."])
-      .TXT("@", [
-        "google-site-verification=_GFUTYZ19KcdCDA26QfZI_w3oWDJoQyD5GyZ6a-ieh8",
-        "v=spf1 include:_mailcust.gandi.net include:spf.mailjet.com ?all",
-      ])
       .TXT(
-        "mailjet._domainkey",
-        "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWsJlP6+qLJS/RLvoNrMPRPrfzcQAuvZ1vUIJkqGauJ23zowQ9ni44XqzYyiBPx00c0QCQhO7oBEhnTeVGMcIfzNASeofZDfiu2dk7iOARpBeKT+EPJtXKS8cW0nz6cusANW7Mxa1Or1sUeV5+J0jFSAmeqWjginJPHJri7ZDA6QIDAQAB"
+        "@",
+        "google-site-verification=_GFUTYZ19KcdCDA26QfZI_w3oWDJoQyD5GyZ6a-ieh8"
       );
 
     // vincentbernat.com, on Bunny
