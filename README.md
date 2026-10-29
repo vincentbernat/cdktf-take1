@@ -128,3 +128,76 @@ $ nix flake update nixpkgs
 - [x] Remove the Route53 zones for `bernat.ch` and `bernat.im`
 - [x] Remove the AWS provider, with the KMS key and alias used to sign the
       Route53 zones (AWS deletes a KMS key after 7 to 30 days)
+
+### Move away from Gandi
+
+Gandi was pretty cheap but became [super
+expensive](https://www.gandi.net/en/domain/tld) since they got bought in 2024. I
+am looking for another registrar. It needs at minimum an API, better a Terraform
+provider (but I can write one), with the ability to set/get nameservers for a
+domain, as well as to publish a DS record. I would prefer an European registrar.
+
+Based on that, alternatives are:
+
+- [Scaleway](https://www.scaleway.com/en/pricing/domains/)
+- [OVHcloud](https://www.ovhcloud.com/fr/domains/tld/)
+- [INWX](https://www.inwx.de/en/domain/pricelist)
+- [Infomaniak](https://www.infomaniak.com/en/domains/prices)
+- [Openprovider](https://www.openprovider.com/domains/domain-prices)
+- [Netim](https://www.netim.com/en/domain-name/extensions-list)
+- [Joker.com](https://joker.com/domain/prices)
+
+#### Support
+
+| Provider     | API                        | Terraform                   |
+|--------------|----------------------------|-----------------------------|
+| Gandi        | [Yes][gandi-api]           | [Yes][gandi-tf]             |
+| Scaleway     | [Yes][scaleway-api]        | [Partial][scaleway-tf]¹     |
+| OVHcloud     | [Yes][ovh-api]             | [Yes][ovh-tf]               |
+| INWX         | [Yes][inwx-api]            | [Yes][inwx-tf]              |
+| Infomaniak   | [Partial][infomaniak-api]² | [No][infomaniak-tf]         |
+| Openprovider | [Yes][openprovider-api]    | [Partial][openprovider-tf]³ |
+| Netim        | [Yes][netim-api]           | No                          |
+| Joker.com    | [Partial][joker-api]⁴      | No                          |
+
+- ¹ Nameservers are read-only and DNSSEC only works with Scaleway nameservers.
+- ² Nameservers cannot be read back.
+- ³ Community provider. Reading back nameservers and DNSSEC keys is not verified.
+- ⁴ DS records cannot be read back.
+
+[gandi-api]: https://api.gandi.net/docs/domains/
+[gandi-tf]: https://github.com/go-gandi/terraform-provider-gandi
+[scaleway-api]: https://www.scaleway.com/en/developers/api/domains-and-dns/
+[scaleway-tf]: https://github.com/scaleway/terraform-provider-scaleway
+[ovh-api]: https://eu.api.ovh.com/console/
+[ovh-tf]: https://github.com/ovh/terraform-provider-ovh
+[inwx-api]: https://www.inwx.com/en/help/apidoc
+[inwx-tf]: https://github.com/inwx/terraform-provider-inwx
+[infomaniak-api]: https://developer.infomaniak.com/docs/api
+[infomaniak-tf]: https://github.com/Infomaniak/terraform-provider-infomaniak
+[openprovider-api]: https://developer.openprovider.com/
+[openprovider-tf]: https://github.com/charpand/terraform-provider-openprovider
+[netim-api]: https://support.netim.com/en/docs/api-rest-3-0
+[joker-api]: https://dmapi.joker.com/docs/DMAPI-ext.txt
+
+For Openprovider, Netim and Joker.com, API access needs a (free) reseller
+account. Netim needs an approval from their sales team.
+
+#### Pricing
+
+Renewal price for one year, in EUR, without VAT.
+
+| Domain                 | Gandi  | Scaleway | OVHcloud | INWX   | Infomaniak | Openprovider | Netim  | Joker.com |
+|------------------------|--------|----------|----------|--------|------------|--------------|--------|-----------|
+| vincentbernat.com      | 31.98  | 12.34    | 14.29    | 14.60  | 11.40      | 15.99        | 16.00  | 16.32     |
+| luffy.cx               | 100.00 | —        | 62.99    | 52.43  | —          | 39.55        | 38.00  | 24.97     |
+| enx.io                 | 64.99  | 98.89    | 59.79    | 69.50  | 52.10      | 84.73        | 60.00  | 81.96     |
+| enxio.fr               | 23.98  | 6.59     | 7.79     | 11.00  | 7.00       | 6.95         | 12.00  | 13.00     |
+| une-oasis-une-ecole.fr | 23.98  | 6.59     | 7.79     | 11.00  | 7.00       | 6.95         | 12.00  | 13.00     |
+| le-val-insolite.fr     | 23.98  | 6.59     | 7.79     | 11.00  | 7.00       | 6.95         | 12.00  | 13.00     |
+| bernat.ch              | 31.98  | 25.57    | 12.99    | 13.50  | 9.90       | 24.99        | 12.00  | 10.58     |
+| bernat.im              | 31.98  | 38.17    | 14.99    | 33.53  | 29.40      | 57.73        | 20.00  | 16.59     |
+|------------------------|--------|----------|----------|--------|------------|--------------|--------|-----------|
+| Total                  | 332.87 | 194.74⁵  | 188.42   | 216.56 | 123.80⁵    | 243.84       | 182.00 | 189.42    |
+
+- ⁵ Without `.cx`, not available.
