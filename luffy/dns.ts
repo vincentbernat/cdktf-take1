@@ -662,36 +662,25 @@ export class Resources extends Construct {
         "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWsJlP6+qLJS/RLvoNrMPRPrfzcQAuvZ1vUIJkqGauJ23zowQ9ni44XqzYyiBPx00c0QCQhO7oBEhnTeVGMcIfzNASeofZDfiu2dk7iOARpBeKT+EPJtXKS8cW0nz6cusANW7Mxa1Or1sUeV5+J0jFSAmeqWjginJPHJri7ZDA6QIDAQAB"
       );
 
-    // vincentbernat.com, on Bunny, backup on Gandi
-    MultiZone(
-      new GandiZone(this, "vincentbernat.com", providers.gandiVB).sign(),
-      new BunnyZone(this, "vincentbernat.com", providers.bunny)
-        .sign()
-        .registrar(providers.gandiVB)
-    )
+    // vincentbernat.com, on Bunny
+    new BunnyZone(this, "vincentbernat.com", providers.bunny)
+      .sign()
+      .registrar(providers.gandiVB)
       .www("@", standardServers)
       .www("www", standardServers)
       .fastmailMX();
 
-    // bernat.im (not signed), on Bunny, backup on Gandi
-    MultiZone(
-      new GandiZone(this, "bernat.im", providers.gandiVB),
-      new BunnyZone(this, "bernat.im", providers.bunny).registrar(
-        providers.gandiVB,
-        false
-      )
-    )
+    // bernat.im (not signed), on Bunny
+    new BunnyZone(this, "bernat.im", providers.bunny)
+      .registrar(providers.gandiVB, false)
       .www("@", standardServers)
       .www("vincent", standardServers)
       .fastmailMX();
 
-    // bernat.ch, on Bunny, backup on Gandi
-    MultiZone(
-      new GandiZone(this, "bernat.ch", providers.gandiVB).sign(),
-      new BunnyZone(this, "bernat.ch", providers.bunny)
-        .sign()
-        .registrar(providers.gandiVB)
-    )
+    // bernat.ch, on Bunny
+    new BunnyZone(this, "bernat.ch", providers.bunny)
+      .sign()
+      .registrar(providers.gandiVB)
       .www("@", standardServers)
       .www("vincent", standardServers)
       .www("media", standardServers)
