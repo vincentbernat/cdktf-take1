@@ -2,6 +2,7 @@ import "cdktn/lib/testing/adapters/jest";
 import * as vm from "vm";
 import { DnsRecord } from "../.gen/providers/bunnynet/dns-record";
 import { DnsZone } from "../.gen/providers/bunnynet/dns-zone";
+import { Rrset } from "../.gen/providers/desec/rrset";
 import { servers, synthesizeDns } from "./helpers";
 
 const synthesized = synthesizeDns();
@@ -65,6 +66,24 @@ describe("Bunny zone", () => {
       name,
       priority: 1,
       value: '. alpn="h3,h2"',
+    });
+  });
+});
+
+describe("deSEC zone", () => {
+  it("removes quotes from HTTPS parameters", () => {
+    expect(synthesized).toHaveResourceWithProperties(Rrset, {
+      type: "HTTPS",
+      subname: "@",
+      rdata: ["1 . alpn=h3,h2"],
+    });
+  });
+
+  it("quotes TXT records", () => {
+    expect(synthesized).toHaveResourceWithProperties(Rrset, {
+      type: "TXT",
+      subname: "_dmarc",
+      rdata: ['"v=DMARC1; p=reject; sp=reject"'],
     });
   });
 });

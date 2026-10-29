@@ -3,8 +3,11 @@ import type { ServerArray } from "./servers";
 import { Construct } from "constructs";
 import { GandiProvider } from "../.gen/providers/gandi/provider";
 import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
+import { DesecProvider } from "../.gen/providers/desec/provider";
+import { DesecProviderFunctions } from "../.gen/providers/desec/provider-functions";
 import * as gandi from "../.gen/providers/gandi";
 import * as bunnynet from "../.gen/providers/bunnynet";
+import * as desec from "../.gen/providers/desec";
 
 const notdisabled = (servers: ServerArray) =>
   servers.filter((server) => !server.disabled);
@@ -37,9 +40,13 @@ type SigningKey = {
 type CommonRecordOptions = {
   ttl: number;
 };
-type RecordOptions = GandiRecordOptions | BunnyRecordOptions;
+type RecordOptions =
+  | GandiRecordOptions
+  | BunnyRecordOptions
+  | DesecRecordOptions;
 type GandiRecordOptions = Partial<CommonRecordOptions>;
 type BunnyRecordOptions = Partial<CommonRecordOptions>;
+type DesecRecordOptions = Partial<CommonRecordOptions>;
 
 /**
  * Base class for a zone.
@@ -523,6 +530,67 @@ export default function handleQuery(query) {
   }
 }
 
+class DesecZone extends Zone {
+  public readonly zone: desec.domain.Domain;
+  constructor(
+    scope: Construct,
+    name: string,
+    private readonly provider: DesecProvider
+  ) {
+    super(scope, `D-${name}`, name);
+    this.zone = new desec.domain.Domain(this, "zone", {
+      name,
+      provider: this.provider,
+    });
+  }
+
+  record(
+    name: string,
+    rrtype: RR,
+    records: Records,
+    options?: DesecRecordOptions
+  ) {
+    if (!Array.isArray(records)) records = [records];
+    if (Token.isUnresolved(records))
+      throw new Error(`${rrtype} ${name}: records cannot be a token list`);
+    // TXT strings are quoted and cut into 255-byte chunks
+    if (rrtype === "TXT")
+      records = records.map((record) =>
+        (record.match(/.{1,255}/g) ?? [""]).map((s) => `"${s}"`).join(" ")
+      );
+    // deSEC returns HTTPS parameters without quotes when they are not needed
+    if (rrtype === "HTTPS")
+      records = records.map((record) =>
+        record.replace(/="([^"\s\\]*)"/g, "=$1")
+      );
+    new desec.rrset.Rrset(this, `${rrtype}-${name}`, {
+      domain: this.zone.name,
+      subname: name,
+      type: rrtype,
+      ttl: options?.ttl ?? defaultTTL,
+      rdata: records,
+      provider: this.provider,
+    });
+    return this;
+  }
+
+  // deSEC always signs zones
+  sign() {
+    const key = this.zone.keys.get(0);
+    const dnskey = new DesecProviderFunctions("desec").parseDnskey(key.dnskey);
+    this.ksk = {
+      publicKey: Token.asString(Fn.lookup(dnskey, "public_key")),
+      algorithm: Token.asNumber(Fn.lookup(dnskey, "algorithm")),
+      dsRecord: Fn.element(key.ds, 0),
+    };
+    return this;
+  }
+
+  get nameservers() {
+    return ["ns1.desec.io", "ns2.desec.org"];
+  }
+}
+
 export class Resources extends Construct {
   /** Servers to deploy each website to. */
   public readonly sites: Record<string, string[]> = {};
@@ -534,6 +602,7 @@ export class Resources extends Construct {
       gandiRB: GandiProvider;
       gandiVB: GandiProvider;
       bunny: BunnynetProvider;
+      desec: DesecProvider;
     }
   ) {
     super(scope, "luffy-dns");
@@ -544,11 +613,14 @@ export class Resources extends Construct {
     const standardServers = byTag("web-standard");
     const volumeServers = byTag("web-volume");
 
-    // enxio.fr/enx.io (on Gandi)
+    // enxio.fr/enx.io (on Gandi), enxio.fr has a backup on deSEC
     MultiZone(
       new GandiZone(this, "enxio.fr", providers.gandiVB)
         .sign()
         .registrar(providers.gandiVB),
+      new DesecZone(this, "enxio.fr", providers.desec)
+        .sign()
+        .registrarKey(providers.gandiVB),
       new GandiZone(this, "enx.io", providers.gandiVB)
         .sign()
         .registrar(providers.gandiVB)

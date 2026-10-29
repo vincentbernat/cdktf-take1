@@ -5,6 +5,9 @@
   "sendCrashReports": "false",
   "terraformProviders": [],
   "terraformModules": [],
+  "targetVersions": {
+    "opentofu": ">=1.7.0"
+  },
   "context": {
     "excludeStackIdFromLogicalIds": "true",
     "allowSepCharsInLogicalIds": "true"

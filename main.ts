@@ -4,6 +4,7 @@ import { HcloudProvider } from "./.gen/providers/hcloud/provider";
 import { VultrProvider } from "./.gen/providers/vultr/provider";
 import { GandiProvider } from "./.gen/providers/gandi/provider";
 import { BunnynetProvider } from "./.gen/providers/bunnynet/provider";
+import { DesecProvider } from "./.gen/providers/desec/provider";
 import * as bunnycdn from "./luffy/bunnycdn";
 import * as servers from "./luffy/servers";
 import * as dns from "./luffy/dns";
@@ -57,6 +58,15 @@ class LuffyStack extends TerraformStack {
       apiKey: bunnyApiKey.value,
     });
 
+    /* deSEC provider */
+    const desecToken = new TerraformVariable(this, "desecToken", {
+      type: "string",
+      sensitive: true,
+    });
+    const desecProvider = new DesecProvider(this, "desec", {
+      apiToken: desecToken.value,
+    });
+
     new bunnycdn.Resources(this, bunnyProvider);
     const serverResource = new servers.Resources(this, {
       hcloud: hcloudProvider,
@@ -66,6 +76,7 @@ class LuffyStack extends TerraformStack {
       gandiVB: gandiProviders.vb,
       gandiRB: gandiProviders.rb,
       bunny: bunnyProvider,
+      desec: desecProvider,
     });
   }
 }

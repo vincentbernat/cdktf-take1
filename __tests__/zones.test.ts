@@ -127,6 +127,27 @@ describe.each(domains("bunnynet_dns_zone", "domain"))(
   }
 );
 
+/** deSEC records. TXT values are unquoted. */
+const desec = (domain: string) => {
+  const zone: Zone = {};
+  const zoneName = zoneReference("desec_domain", domain, "name");
+  for (const r of records("desec_rrset")) {
+    if (r.domain !== zoneName) continue;
+    const values = r.rdata.map((value: string) =>
+      r.type === "TXT" ? value.replace(/^"|"$/g, "").replace(/" "/g, "") : value
+    );
+    add(zone, `${r.subname} ${r.type}`, r.ttl, values);
+  }
+  return zone;
+};
+
+describe.each(domains("desec_domain", "name"))("deSEC zone %s", (domain) => {
+  it("has the same records as Gandi", () => {
+    expect(withoutHttps(desec(domain))).toEqual(gandi(domain));
+  });
+});
+
 it("compares at least one zone of each provider", () => {
   expect(domains("bunnynet_dns_zone", "domain")).not.toHaveLength(0);
+  expect(domains("desec_domain", "name")).not.toHaveLength(0);
 });
