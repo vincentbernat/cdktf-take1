@@ -687,6 +687,7 @@ export class Resources extends Construct {
       .registrar(providers.gandiVB)
       .fastmailMX()
       .www("@", standardServers)
+      .www("media", standardServers)
       .www("www", standardServers)
       .www("haproxy", volumeServers)
       .www("*.pages", standardServers)
