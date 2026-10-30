@@ -574,6 +574,9 @@ class DesecZone extends Zone {
       records = records.map((record) =>
         record.replace(/="([^"\s\\]*)"/g, "=$1")
       );
+    // deSEC returns DS digests in lowercase
+    if (rrtype === "DS")
+      records = records.map((record) => record.toLowerCase());
     this.rrsets.push({
       subname: name,
       type: rrtype,
