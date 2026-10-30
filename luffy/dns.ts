@@ -78,6 +78,9 @@ abstract class BasicZone extends Construct {
   CNAME(name: string, records: Records, options?: RecordOptions) {
     return this.record(name, "CNAME", records, options);
   }
+  DS(name: string, records: Records, options?: RecordOptions) {
+    return this.record(name, "DS", records, options);
+  }
   MX(name: string, records: Records, options?: RecordOptions) {
     return this.record(name, "MX", records, options);
   }
@@ -680,11 +683,16 @@ export class Resources extends Construct {
       .fastmailMX(["vincent"])
       .fastmailServices();
 
-    // luffy.cx, on Gandi
+    // luffy.cx, on Gandi, with deSEC as backup
     const dnsServers = servers.filter((server) => server.tags.includes("dns"));
-    new GandiZone(this, "luffy.cx", providers.gandiVB)
-      .sign()
-      .registrar(providers.gandiVB)
+    MultiZone(
+      new GandiZone(this, "luffy.cx", providers.gandiVB)
+        .sign()
+        .registrar(providers.gandiVB),
+      new DesecZone(this, "luffy.cx", providers.desec)
+        .sign()
+        .registrarKey(providers.gandiVB)
+    )
       .fastmailMX()
       .www("@", standardServers)
       .www("media", standardServers)
@@ -705,10 +713,10 @@ export class Resources extends Construct {
         "acme",
         dnsServers.map((server) => `${server.name}.`)
       )
-      .record("y", "DS", [
+      .DS("y", [
         "52941 13 2 3CBA38598E16FF9B4F7BA73D783C0F8250A0F4CABD64D8F467838732F8D8988E",
       ])
-      .record("acme", "DS", [
+      .DS("acme", [
         "55628 13 2 4946E7508F20E15F1B577A231104B029A1A82E04699A80CD46ADCE31227EE81F",
       ]);
 
