@@ -686,15 +686,14 @@ export class Resources extends Construct {
       .fastmailMX(["vincent"])
       .fastmailServices();
 
-    // luffy.cx, on Gandi, with deSEC as backup
+    // luffy.cx, on Gandi, with deSEC as backup (unsigned for now)
     const dnsServers = servers.filter((server) => server.tags.includes("dns"));
     MultiZone(
-      new GandiZone(this, "luffy.cx", providers.gandiVB)
-        .sign()
-        .registrar(providers.gandiVB),
+      new GandiZone(this, "luffy.cx", providers.gandiVB).registrar(
+        providers.gandiVB,
+        false
+      ),
       new DesecZone(this, "luffy.cx", providers.desec)
-        .sign()
-        .registrarKey(providers.gandiVB)
     )
       .fastmailMX()
       .www("@", standardServers)
