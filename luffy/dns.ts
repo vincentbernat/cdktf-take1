@@ -5,9 +5,11 @@ import { GandiProvider } from "../.gen/providers/gandi/provider";
 import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
 import { DesecProvider } from "../.gen/providers/desec/provider";
 import { DesecProviderFunctions } from "../.gen/providers/desec/provider-functions";
+import { OvhProvider } from "../.gen/providers/ovh/provider";
 import * as gandi from "../.gen/providers/gandi";
 import * as bunnynet from "../.gen/providers/bunnynet";
 import * as desec from "../.gen/providers/desec";
+import * as ovh from "../.gen/providers/ovh";
 
 const notdisabled = (servers: ServerArray) =>
   servers.filter((server) => !server.disabled);
@@ -254,32 +256,97 @@ abstract class Zone extends BasicZone {
     this.ksk = null;
   }
 
-  /** Register the zone to Gandi. */
-  registrar(provider: GandiProvider, dnssec: boolean = true) {
-    new gandi.nameservers.Nameservers(
+  /** Register the zone to a registrar. */
+  registrar(registrar: Registrar, dnssec: boolean = true) {
+    registrar.nameservers(
       this.node.scope as Construct,
       `NS-${this.name}`,
-      {
-        domain: this.name,
-        nameservers: this.nameservers,
-        provider: provider,
-      }
+      this.name,
+      this.nameservers
     );
-    if (dnssec) this.registrarKey(provider);
+    if (dnssec) {
+      if (!this.ksk) throw new Error(`${this.name} was not signed`);
+      registrar.ksk(this, "NSSEC", this.name, this.ksk);
+    }
     return this;
   }
+}
 
-  /** Publish the KSK of the zone to Gandi. */
-  registrarKey(provider: GandiProvider) {
-    if (!this.ksk) throw new Error(`${this.name} was not signed`);
-    new gandi.dnssecKey.DnssecKey(this, "NSSEC", {
-      domain: this.name,
-      algorithm: this.ksk.algorithm,
-      publicKey: this.ksk.publicKey,
-      type: "ksk",
-      provider: provider,
+/** A registrar holds the nameservers and the KSK of a domain. */
+interface Registrar {
+  nameservers(
+    scope: Construct,
+    id: string,
+    domain: string,
+    nameservers: string[]
+  ): void;
+  ksk(scope: Construct, id: string, domain: string, ksk: SigningKey): void;
+}
+
+class GandiRegistrar implements Registrar {
+  constructor(private readonly provider: GandiProvider) {}
+
+  nameservers(
+    scope: Construct,
+    id: string,
+    domain: string,
+    nameservers: string[]
+  ) {
+    new gandi.nameservers.Nameservers(scope, id, {
+      domain,
+      nameservers,
+      provider: this.provider,
     });
-    return this;
+  }
+
+  ksk(scope: Construct, id: string, domain: string, ksk: SigningKey) {
+    new gandi.dnssecKey.DnssecKey(scope, id, {
+      domain,
+      algorithm: ksk.algorithm,
+      publicKey: ksk.publicKey,
+      type: "ksk",
+      provider: this.provider,
+    });
+  }
+}
+
+class OvhRegistrar implements Registrar {
+  constructor(private readonly provider: OvhProvider) {}
+
+  nameservers(
+    scope: Construct,
+    id: string,
+    domain: string,
+    nameservers: string[]
+  ) {
+    new ovh.domainNameServers.DomainNameServers(scope, id, {
+      domain,
+      servers: nameservers.map((host) => ({ host })),
+      provider: this.provider,
+    });
+  }
+
+  ksk(scope: Construct, id: string, domain: string, ksk: SigningKey) {
+    new ovh.domainDsRecords.DomainDsRecords(scope, id, {
+      domain,
+      dsRecords: [
+        {
+          algorithm: Fn.lookup(
+            {
+              13: "ECDSAP256SHA256",
+              14: "ECDSAP384SHA384",
+              15: "ED25519",
+            },
+            Token.asString(ksk.algorithm)
+          ),
+          flags: "KEY_SIGNING_KEY",
+          publicKey: ksk.publicKey,
+          // The key tag is the first field of the DS record
+          tag: Token.asNumber(Fn.element(Fn.split(" ", ksk.dsRecord), 0)),
+        },
+      ],
+      provider: this.provider,
+    });
   }
 }
 
@@ -615,6 +682,7 @@ export class Resources extends Construct {
       gandiVB: GandiProvider;
       bunny: BunnynetProvider;
       desec: DesecProvider;
+      ovh: OvhProvider;
     }
   ) {
     super(scope, "luffy-dns");
@@ -622,6 +690,11 @@ export class Resources extends Construct {
       role: tag,
       servers: servers.filter((server) => server.tags.includes(tag)),
     });
+    const registrars = {
+      gandiVB: new GandiRegistrar(providers.gandiVB),
+      gandiRB: new GandiRegistrar(providers.gandiRB),
+      ovh: new OvhRegistrar(providers.ovh),
+    };
     const standardServers = byTag("web-standard");
     const volumeServers = byTag("web-volume");
 
@@ -629,10 +702,10 @@ export class Resources extends Construct {
     MultiZone(
       new DesecZone(this, "enxio.fr", providers.desec)
         .sign()
-        .registrar(providers.gandiVB),
+        .registrar(registrars.gandiVB),
       new DesecZone(this, "enx.io", providers.desec)
         .sign()
-        .registrar(providers.gandiVB)
+        .registrar(registrars.gandiVB)
     )
       .www("@", standardServers)
       .www("www", standardServers)
@@ -642,7 +715,7 @@ export class Resources extends Construct {
     // le-val-insolite.fr, on Bunny
     new BunnyZone(this, "le-val-insolite.fr", providers.bunny)
       .sign()
-      .registrar(providers.gandiVB)
+      .registrar(registrars.gandiVB)
       .www("@", standardServers)
       .www("www", standardServers)
       .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."]);
@@ -650,7 +723,7 @@ export class Resources extends Construct {
     // une-oasis-une-ecole.fr, on Bunny
     new BunnyZone(this, "une-oasis-une-ecole.fr", providers.bunny)
       .sign()
-      .registrar(providers.gandiRB)
+      .registrar(registrars.gandiRB)
       .www("@", standardServers)
       .www("www", standardServers)
       .www("media", standardServers)
@@ -660,17 +733,25 @@ export class Resources extends Construct {
         "google-site-verification=_GFUTYZ19KcdCDA26QfZI_w3oWDJoQyD5GyZ6a-ieh8"
       );
 
+    // lueurs-espoir.fr, on Bunny
+    new BunnyZone(this, "lueurs-espoir.fr", providers.bunny)
+      .sign()
+      .registrar(registrars.ovh)
+      .www("@", standardServers)
+      .www("www", standardServers)
+      .www("media", standardServers);
+
     // vincentbernat.com, on Bunny
     new BunnyZone(this, "vincentbernat.com", providers.bunny)
       .sign()
-      .registrar(providers.gandiVB)
+      .registrar(registrars.gandiVB)
       .www("@", standardServers)
       .www("www", standardServers)
       .fastmailMX();
 
     // bernat.im (not signed), on Bunny
     new BunnyZone(this, "bernat.im", providers.bunny)
-      .registrar(providers.gandiVB, false)
+      .registrar(registrars.gandiVB, false)
       .www("@", standardServers)
       .www("vincent", standardServers)
       .fastmailMX();
@@ -678,7 +759,7 @@ export class Resources extends Construct {
     // bernat.ch, on Bunny
     new BunnyZone(this, "bernat.ch", providers.bunny)
       .sign()
-      .registrar(providers.gandiVB)
+      .registrar(registrars.gandiVB)
       .www("@", standardServers)
       .www("vincent", standardServers)
       .www("media", standardServers)
@@ -691,7 +772,7 @@ export class Resources extends Construct {
     MultiZone(
       new GandiZone(this, "luffy.cx", providers.gandiVB),
       new DesecZone(this, "luffy.cx", providers.desec).registrar(
-        providers.gandiVB,
+        registrars.gandiVB,
         false
       )
     )

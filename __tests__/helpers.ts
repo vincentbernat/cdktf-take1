@@ -2,6 +2,7 @@ import { Testing } from "cdktn";
 import { GandiProvider } from "../.gen/providers/gandi/provider";
 import { BunnynetProvider } from "../.gen/providers/bunnynet/provider";
 import { DesecProvider } from "../.gen/providers/desec/provider";
+import { OvhProvider } from "../.gen/providers/ovh/provider";
 import * as dns from "../luffy/dns";
 import type { ServerArray } from "../luffy/servers";
 
@@ -33,10 +34,12 @@ export const synthesizeDns = () =>
     const gandi = new GandiProvider(scope, "gandi", { key: "test" });
     const bunny = new BunnynetProvider(scope, "bunny", { apiKey: "test" });
     const desec = new DesecProvider(scope, "desec", { apiToken: "test" });
+    const ovh = new OvhProvider(scope, "ovh", { endpoint: "ovh-eu" });
     new dns.Resources(scope, servers, {
       gandiVB: gandi,
       gandiRB: gandi,
       bunny,
       desec,
+      ovh,
     });
   });

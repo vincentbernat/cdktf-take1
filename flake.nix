@@ -23,6 +23,7 @@
           p.hetznercloud_hcloud
           p.vultr_vultr
           p.bunnyway_bunnynet
+          p.ovh_ovh
           # Not packaged in nixpkgs
           (p.mkProvider {
             owner = "timofurrer";

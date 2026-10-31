@@ -5,6 +5,7 @@ import { VultrProvider } from "./.gen/providers/vultr/provider";
 import { GandiProvider } from "./.gen/providers/gandi/provider";
 import { BunnynetProvider } from "./.gen/providers/bunnynet/provider";
 import { DesecProvider } from "./.gen/providers/desec/provider";
+import { OvhProvider } from "./.gen/providers/ovh/provider";
 import * as bunnycdn from "./luffy/bunnycdn";
 import * as servers from "./luffy/servers";
 import * as dns from "./luffy/dns";
@@ -67,6 +68,23 @@ class LuffyStack extends TerraformStack {
       apiToken: desecToken.value,
     });
 
+    /* OVH provider */
+    const ovhProvider = new OvhProvider(this, "ovh", {
+      endpoint: "ovh-eu",
+      applicationKey: new TerraformVariable(this, "ovhApplicationKey", {
+        type: "string",
+        sensitive: true,
+      }).value,
+      applicationSecret: new TerraformVariable(this, "ovhApplicationSecret", {
+        type: "string",
+        sensitive: true,
+      }).value,
+      consumerKey: new TerraformVariable(this, "ovhConsumerKey", {
+        type: "string",
+        sensitive: true,
+      }).value,
+    });
+
     new bunnycdn.Resources(this, bunnyProvider);
     const serverResource = new servers.Resources(this, {
       hcloud: hcloudProvider,
@@ -77,6 +95,7 @@ class LuffyStack extends TerraformStack {
       gandiRB: gandiProviders.rb,
       bunny: bunnyProvider,
       desec: desecProvider,
+      ovh: ovhProvider,
     });
   }
 }
