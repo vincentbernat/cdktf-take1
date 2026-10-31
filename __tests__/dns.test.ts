@@ -215,7 +215,7 @@ describe("Bunny geo script", () => {
   it("returns only the closest server when the second one is far", () => {
     down = ["192.0.2.3", "192.0.2.4"];
     expect(run("A")).toEqual([
-      expect.objectContaining({ ip: "192.0.2.2", ttl: 300 }),
+      expect.objectContaining({ ip: "192.0.2.2", ttl: 120 }),
     ]);
   });
 

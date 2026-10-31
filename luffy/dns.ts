@@ -555,7 +555,7 @@ export default function handleQuery(query) {
         GeoDistance.calculate(s, location)
       );
       if (second > 2 * first && second - first > 1000) {
-        return [answers[type](byIpv4[selected[0].ip][family], 300)];
+        return [answers[type](byIpv4[selected[0].ip][family], 120)];
       }
     }
     return selected.map((s) => answers[type](byIpv4[s.ip][family]));
