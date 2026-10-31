@@ -42,11 +42,7 @@ type SigningKey = {
 type CommonRecordOptions = {
   ttl: number;
 };
-type RecordOptions =
-  | GandiRecordOptions
-  | BunnyRecordOptions
-  | DesecRecordOptions;
-type GandiRecordOptions = Partial<CommonRecordOptions>;
+type RecordOptions = BunnyRecordOptions | DesecRecordOptions;
 type BunnyRecordOptions = Partial<CommonRecordOptions>;
 type DesecRecordOptions = Partial<CommonRecordOptions>;
 
@@ -347,63 +343,6 @@ class OvhRegistrar implements Registrar {
       ],
       provider: this.provider,
     });
-  }
-}
-
-class GandiZone extends Zone {
-  constructor(
-    scope: Construct,
-    name: string,
-    private readonly provider: GandiProvider
-  ) {
-    super(scope, `G-${name}`, name);
-  }
-
-  record(
-    name: string,
-    rrtype: RR,
-    records: Records,
-    options?: GandiRecordOptions
-  ) {
-    // Gandi does not accept "." as target
-    if (rrtype === "HTTPS") return this;
-    let providerOptions = {
-      ttl: defaultTTL,
-      ...options,
-      provider: this.provider,
-    };
-    let values = Array.isArray(records) ? records : [records];
-    if (rrtype === "TXT") values = Fn.formatlist('\\"%s\\"', [values]);
-    new gandi.livednsRecord.LivednsRecord(this, `${rrtype}-${name}`, {
-      zone: this.name,
-      type: rrtype,
-      name,
-      values,
-      ...providerOptions,
-    });
-    return this;
-  }
-
-  sign() {
-    const ksk = new gandi.livednsKey.LivednsKey(this, "KSK", {
-      domain: this.name,
-      provider: this.provider,
-    });
-    this.ksk = {
-      publicKey: ksk.publicKey,
-      algorithm: ksk.algorithm,
-      dsRecord: ksk.ds,
-    };
-    return this;
-  }
-
-  get nameservers() {
-    const ns = new gandi.dataGandiLivednsDomainNs.DataGandiLivednsDomainNs(
-      this,
-      `LiveDNSNS`,
-      { name: this.name, provider: this.provider }
-    );
-    return ns.nameservers;
   }
 }
 
@@ -767,15 +706,10 @@ export class Resources extends Construct {
       .fastmailMX(["vincent"])
       .fastmailServices();
 
-    // luffy.cx, on Gandi, with deSEC as backup (unsigned for now)
+    // luffy.cx on deSEC
     const dnsServers = servers.filter((server) => server.tags.includes("dns"));
-    MultiZone(
-      new GandiZone(this, "luffy.cx", providers.gandiVB),
-      new DesecZone(this, "luffy.cx", providers.desec).registrar(
-        registrars.gandiVB,
-        false
-      )
-    )
+    new DesecZone(this, "luffy.cx", providers.desec)
+      .registrar(registrars.gandiVB, false)
       .fastmailMX()
       .www("@", standardServers)
       .www("media", standardServers)
