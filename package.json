@@ -9,16 +9,15 @@
   },
   "dependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^22.20.1",
+    "@types/node": "^24.19.2",
     "cdktn": "^0.25.0",
     "cdktn-cli": "^0.25.0",
-    "constructs": "10.6.0",
-    "eslint": "^8.27.0",
+    "constructs": "^10.8.1",
     "jest": "^30.5.2",
     "prettier": "^2.7.1",
-    "ts-jest": "^29.4.14",
+    "ts-jest": "^29.4.15",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
-    "typescript-language-server": "^2.1.0"
+    "typescript-language-server": "^6.0.2"
   }
 }
