@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "alwaysStrict": true,
     "declaration": true,
     "experimentalDecorators": true,
     "inlineSourceMap": true,
@@ -11,18 +10,15 @@
     "module": "CommonJS",
     "noEmitOnError": true,
     "noFallthroughCasesInSwitch": true,
-    "noImplicitAny": true,
     "noImplicitReturns": true,
-    "noImplicitThis": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "resolveJsonModule": true,
     "strict": true,
-    "strictNullChecks": true,
-    "strictPropertyInitialization": true,
     "stripInternal": true,
     "target": "ES2018",
-    "incremental": true
+    "incremental": true,
+    "types": ["node", "jest"]
   },
   "include": [
     "**/*.ts",
