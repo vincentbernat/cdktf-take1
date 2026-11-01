@@ -665,12 +665,7 @@ export class Resources extends Construct {
       .registrar(registrars.gandiRB)
       .www("@", standardServers)
       .www("www", standardServers)
-      .www("media", standardServers)
-      .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."])
-      .TXT(
-        "@",
-        "google-site-verification=_GFUTYZ19KcdCDA26QfZI_w3oWDJoQyD5GyZ6a-ieh8"
-      );
+      .www("media", standardServers);
 
     // lueurs-espoir.fr, on Bunny
     new BunnyZone(this, "lueurs-espoir.fr", providers.bunny)
