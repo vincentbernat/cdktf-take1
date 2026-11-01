@@ -617,8 +617,7 @@ export class Resources extends Construct {
     scope: Construct,
     servers: ServerArray,
     providers: {
-      gandiRB: GandiProvider;
-      gandiVB: GandiProvider;
+      gandi: GandiProvider;
       bunny: BunnynetProvider;
       desec: DesecProvider;
       ovh: OvhProvider;
@@ -630,8 +629,7 @@ export class Resources extends Construct {
       servers: servers.filter((server) => server.tags.includes(tag)),
     });
     const registrars = {
-      gandiVB: new GandiRegistrar(providers.gandiVB),
-      gandiRB: new GandiRegistrar(providers.gandiRB),
+      gandi: new GandiRegistrar(providers.gandi),
       ovh: new OvhRegistrar(providers.ovh),
     };
     const standardServers = byTag("web-standard");
@@ -641,10 +639,10 @@ export class Resources extends Construct {
     MultiZone(
       new DesecZone(this, "enxio.fr", providers.desec)
         .sign()
-        .registrar(registrars.gandiVB),
+        .registrar(registrars.gandi),
       new DesecZone(this, "enx.io", providers.desec)
         .sign()
-        .registrar(registrars.gandiVB)
+        .registrar(registrars.gandi)
     )
       .www("@", standardServers)
       .www("www", standardServers)
@@ -654,7 +652,7 @@ export class Resources extends Construct {
     // le-val-insolite.fr, on Bunny
     new BunnyZone(this, "le-val-insolite.fr", providers.bunny)
       .sign()
-      .registrar(registrars.gandiVB)
+      .registrar(registrars.gandi)
       .www("@", standardServers)
       .www("www", standardServers)
       .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."]);
@@ -662,7 +660,7 @@ export class Resources extends Construct {
     // une-oasis-une-ecole.fr, on Bunny
     new BunnyZone(this, "une-oasis-une-ecole.fr", providers.bunny)
       .sign()
-      .registrar(registrars.gandiRB)
+      .registrar(registrars.ovh)
       .www("@", standardServers)
       .www("www", standardServers)
       .www("media", standardServers);
@@ -678,14 +676,14 @@ export class Resources extends Construct {
     // vincentbernat.com, on Bunny
     new BunnyZone(this, "vincentbernat.com", providers.bunny)
       .sign()
-      .registrar(registrars.gandiVB)
+      .registrar(registrars.gandi)
       .www("@", standardServers)
       .www("www", standardServers)
       .fastmailMX();
 
     // bernat.im (not signed), on Bunny
     new BunnyZone(this, "bernat.im", providers.bunny)
-      .registrar(registrars.gandiVB, false)
+      .registrar(registrars.gandi, false)
       .www("@", standardServers)
       .www("vincent", standardServers)
       .fastmailMX();
@@ -693,7 +691,7 @@ export class Resources extends Construct {
     // bernat.ch, on Bunny
     new BunnyZone(this, "bernat.ch", providers.bunny)
       .sign()
-      .registrar(registrars.gandiVB)
+      .registrar(registrars.gandi)
       .www("@", standardServers)
       .www("vincent", standardServers)
       .www("media", standardServers)
@@ -705,7 +703,7 @@ export class Resources extends Construct {
     const dnsServers = servers.filter((server) => server.tags.includes("dns"));
     new DesecZone(this, "luffy.cx", providers.desec)
       .sign()
-      .registrar(registrars.gandiVB)
+      .registrar(registrars.gandi)
       .fastmailMX()
       .www("@", standardServers)
       .www("media", standardServers)

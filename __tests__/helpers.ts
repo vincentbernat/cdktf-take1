@@ -36,8 +36,7 @@ export const synthesizeDns = () =>
     const desec = new DesecProvider(scope, "desec", { apiToken: "test" });
     const ovh = new OvhProvider(scope, "ovh", { endpoint: "ovh-eu" });
     new dns.Resources(scope, servers, {
-      gandiVB: gandi,
-      gandiRB: gandi,
+      gandi,
       bunny,
       desec,
       ovh,

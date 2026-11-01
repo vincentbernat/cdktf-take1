@@ -33,22 +33,13 @@ class LuffyStack extends TerraformStack {
     });
 
     /* Gandi providers */
-    const gandiProviders = {
-      vb: new GandiProvider(this, "gandiVB", {
-        key: new TerraformVariable(this, "gandiVBKey", {
-          type: "string",
-          sensitive: true,
-        }).value,
-        alias: "vb",
-      }),
-      rb: new GandiProvider(this, "gandiRB", {
-        key: new TerraformVariable(this, "gandiRBKey", {
-          type: "string",
-          sensitive: true,
-        }).value,
-        alias: "rb",
-      }),
-    };
+    const gandiProvider = new GandiProvider(this, "gandi", {
+      key: new TerraformVariable(this, "gandiKey", {
+        type: "string",
+        sensitive: true,
+      }).value,
+      alias: "vb",
+    });
 
     /* Bunny provider */
     const bunnyApiKey = new TerraformVariable(this, "bunnyApiKey", {
@@ -91,8 +82,7 @@ class LuffyStack extends TerraformStack {
       vultr: vultrProvider,
     });
     new dns.Resources(this, serverResource.servers, {
-      gandiVB: gandiProviders.vb,
-      gandiRB: gandiProviders.rb,
+      gandi: gandiProvider,
       bunny: bunnyProvider,
       desec: desecProvider,
       ovh: ovhProvider,
