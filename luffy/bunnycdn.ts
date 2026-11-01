@@ -55,5 +55,6 @@ export class Resources extends Construct {
     super(scope, "luffy-bunnycdn");
     new MediaPullzone(this, "media.bernat.ch", provider);
     new MediaPullzone(this, "media.une-oasis-une-ecole.fr", provider);
+    new MediaPullzone(this, "media.lueurs-espoir.fr", provider);
   }
 }
