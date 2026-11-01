@@ -709,7 +709,8 @@ export class Resources extends Construct {
     // luffy.cx on deSEC
     const dnsServers = servers.filter((server) => server.tags.includes("dns"));
     new DesecZone(this, "luffy.cx", providers.desec)
-      .registrar(registrars.gandiVB, false)
+      .sign()
+      .registrar(registrars.gandiVB)
       .fastmailMX()
       .www("@", standardServers)
       .www("media", standardServers)
