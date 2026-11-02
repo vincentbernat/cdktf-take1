@@ -655,7 +655,11 @@ export class Resources extends Construct {
       .registrar(registrars.gandi)
       .www("@", standardServers)
       .www("www", standardServers)
-      .MX("@", ["10 spool.mail.gandi.net.", "50 fb.mail.gandi.net."]);
+      .MX("@", ["0 mx1.forwardemail.net.", "0 mx2.forwardemail.net."])
+      .TXT(
+        "@",
+        "forward-email=QWtYV05LaExBSDJROHR6RGRzSGN6Wm9Pb3FaQ0lwWXItdVdxSy1TZVN1d2tmb3ZPLXZLcXI3UThhdXRIQzZDTUJWdjVLMG9u"
+      );
 
     // une-oasis-une-ecole.fr, on Bunny
     new BunnyZone(this, "une-oasis-une-ecole.fr", providers.bunny)
