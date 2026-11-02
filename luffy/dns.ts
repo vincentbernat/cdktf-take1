@@ -676,7 +676,7 @@ export class Resources extends Construct {
     // vincentbernat.com, on Bunny
     new BunnyZone(this, "vincentbernat.com", providers.bunny)
       .sign()
-      .registrar(registrars.gandi)
+      .registrar(registrars.ovh)
       .www("@", standardServers)
       .www("www", standardServers)
       .fastmailMX();
