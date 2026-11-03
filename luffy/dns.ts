@@ -639,10 +639,10 @@ export class Resources extends Construct {
     MultiZone(
       new DesecZone(this, "enxio.fr", providers.desec)
         .sign()
-        .registrar(registrars.gandi),
+        .registrar(registrars.ovh),
       new DesecZone(this, "enx.io", providers.desec)
         .sign()
-        .registrar(registrars.gandi)
+        .registrar(registrars.ovh)
     )
       .www("@", standardServers)
       .www("www", standardServers)
@@ -652,7 +652,7 @@ export class Resources extends Construct {
     // le-val-insolite.fr, on Bunny
     new BunnyZone(this, "le-val-insolite.fr", providers.bunny)
       .sign()
-      .registrar(registrars.gandi)
+      .registrar(registrars.ovh)
       .www("@", standardServers)
       .www("www", standardServers)
       .MX("@", ["0 mx1.forwardemail.net.", "0 mx2.forwardemail.net."])
