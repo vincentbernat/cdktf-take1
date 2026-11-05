@@ -695,7 +695,7 @@ export class Resources extends Construct {
     // bernat.ch, on Bunny
     new BunnyZone(this, "bernat.ch", providers.bunny)
       .sign()
-      .registrar(registrars.gandi, false)
+      .registrar(registrars.ovh)
       .www("@", standardServers)
       .www("vincent", standardServers)
       .www("media", standardServers)
