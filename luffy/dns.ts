@@ -695,7 +695,7 @@ export class Resources extends Construct {
     // bernat.ch, on Bunny
     new BunnyZone(this, "bernat.ch", providers.bunny)
       .sign()
-      .registrar(registrars.gandi)
+      .registrar(registrars.gandi, false)
       .www("@", standardServers)
       .www("vincent", standardServers)
       .www("media", standardServers)
@@ -707,7 +707,7 @@ export class Resources extends Construct {
     const dnsServers = servers.filter((server) => server.tags.includes("dns"));
     new DesecZone(this, "luffy.cx", providers.desec)
       .sign()
-      .registrar(registrars.gandi)
+      .registrar(registrars.gandi, false)
       .fastmailMX()
       .www("@", standardServers)
       .www("media", standardServers)
