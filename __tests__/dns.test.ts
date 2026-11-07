@@ -240,11 +240,31 @@ describe("Bunny geo script", () => {
     ]);
   });
 
-  it("completes with the closest servers that are down", () => {
+  it("returns only the closest server when it is the only one up", () => {
     down = ["192.0.2.3", "192.0.2.4", "192.0.2.5", "192.0.2.6"];
-    expect(query("A")).toEqual(["A 192.0.2.2", "A 192.0.2.4"]);
+    expect(run("A")).toEqual([
+      expect.objectContaining({ ip: "192.0.2.2", ttl: 120 }),
+    ]);
+  });
+
+  it("returns the closest servers when all are down", () => {
     down = servers.map((s) => s.ipv4Address!);
     expect(query("A")).toEqual(["A 192.0.2.2", "A 192.0.2.4"]);
+  });
+
+  it("only checks the status of the needed servers", () => {
+    const checked: string[] = [];
+    const getStatus = runtime.Monitoring.getStatus;
+    runtime.Monitoring.getStatus = (ip: string) => {
+      checked.push(ip);
+      return getStatus(ip);
+    };
+    expect(query("A")).toEqual(["A 192.0.2.2", "A 192.0.2.4"]);
+    expect(checked).toEqual(["192.0.2.2", "192.0.2.4"]);
+    checked.length = 0;
+    down = ["192.0.2.3", "192.0.2.4"];
+    query("A");
+    expect(checked).toEqual(["192.0.2.2", "192.0.2.4"]);
   });
 
   it("returns all servers when monitoring fails", () => {

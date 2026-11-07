@@ -461,43 +461,50 @@ export default function handleQuery(query) {
     // Routing and monitoring only work with IPv4 addresses: select servers
     // using their IPv4 address, then answer with the requested family.
     const byIpv4 = {};
-    const online = [];
-    const offline = [];
+    let candidates = [];
     for (const s of available) {
       if (!s.ipv4) continue;
-      const server = new Server(s.ipv4, s.latitude, s.longitude, 100);
       byIpv4[s.ipv4] = s;
-      if (Monitoring.getStatus(s.ipv4).isOnline) online.push(server);
-      else offline.push(server);
+      candidates.push(new Server(s.ipv4, s.latitude, s.longitude, 100));
     }
     const location = query.request.geoLocation;
-    const selected = [];
-    const pick = (list) => {
-      let candidates = list;
-      while (selected.length < 2 && candidates.length > 0) {
-        const server = RoutingEngine.getClosestServer(
-          candidates,
-          location,
-          false
-        );
-        selected.push(server);
-        candidates = candidates.filter((s) => s.ip !== server.ip);
-      }
-    };
-    // Prefer online candidates, but fallback to anything if not online.
-    pick(online);
-    pick(offline);
-    // When the second server is far away (more than double _and_ more than 1000 miles
-    // away), only return the closest one with a short TTL.
-    if (selected.length === 2) {
-      const [first, second] = selected.map((s) =>
-        GeoDistance.calculate(s, location)
+    const next = () => {
+      if (candidates.length === 0) return null;
+      const server = RoutingEngine.getClosestServer(
+        candidates,
+        location,
+        false
       );
-      if (second > 2 * first && second - first > 1000) {
-        return [answers[type](byIpv4[selected[0].ip][family], 120)];
+      candidates = candidates.filter((s) => s.ip !== server.ip);
+      return server;
+    };
+    const isOnline = (s) => Monitoring.getStatus(s.ip).isOnline;
+    const answer = (s, ttl) => answers[type](byIpv4[s.ip][family], ttl);
+
+    // First server: the closest online one.
+    const offline = [];
+    let first = null;
+    for (let s = next(); s; s = next()) {
+      if (isOnline(s)) {
+        first = s;
+        break;
       }
+      offline.push(s);
     }
-    return selected.map((s) => answers[type](byIpv4[s.ip][family]));
+
+    // If all servers are down, return the two closest ones.
+    if (!first) return offline.slice(0, 2).map((s) => answer(s));
+
+    // Second server: the next closest online one, unless it is far away (more
+    // than double _and_ more than 1000 miles away). In this case, only return
+    // the first one with a short TTL.
+    const distance = GeoDistance.calculate(first, location);
+    for (let s = next(); s; s = next()) {
+      const d = GeoDistance.calculate(s, location);
+      if (d > 2 * distance && d - distance > 1000) break;
+      if (isOnline(s)) return [answer(first), answer(s)];
+    }
+    return [answer(first, 120)];
   } catch (e) {
     // Return all servers if anything goes wrong
     return available.map((s) => answers[type](s[family]));
